@@ -71,6 +71,7 @@ class TrainerConfig:
     select: str = "max"  # 'max' or 'min'
     validate_on: str = "f1_score"
     work_dir: str = "./output"
+    resume_from_checkpoint: Optional[str] = None  # Path to checkpoint to resume from
 
 
 @dataclass
@@ -82,6 +83,16 @@ class EvaluatorConfig:
 
 
 @dataclass
+class InferenceConfig:
+    """Inference configuration."""
+    name: str = "HerdNetInference"  # Inference registry name
+    device: str = "cuda"  # Device for inference
+    checkpoint_path: Optional[str] = None  # Path to model checkpoint
+    threshold: float = 0.5  # Detection threshold
+    batch_size: int = 1  # Batch size for inference
+
+
+@dataclass
 class HerdNetExperimentConfig:
     """Complete HerdNet experiment configuration."""
     experiment: ExperimentMetadata = field(default_factory=ExperimentMetadata)
@@ -90,5 +101,6 @@ class HerdNetExperimentConfig:
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     trainer: TrainerConfig = field(default_factory=TrainerConfig)
     evaluator: EvaluatorConfig = field(default_factory=EvaluatorConfig)
+    inference: InferenceConfig = field(default_factory=InferenceConfig)
     integrations: dict[str, Any] = field(default_factory=dict)
     seed: int = 9292

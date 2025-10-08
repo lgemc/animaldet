@@ -12,6 +12,7 @@ dependencies = [
     "rfdetr",
     "tensorboard>=2.20.0",
     "torch>=2.8.0",
+    "wandb>=0.22.2",
 ]
 
 [dependency-groups]

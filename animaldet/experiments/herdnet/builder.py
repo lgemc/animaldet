@@ -9,7 +9,6 @@ from typing import Dict, Any
 from omegaconf import OmegaConf
 
 from animaloc.train import Trainer as AnimalocTrainer
-from animaloc.data.batch_utils import collate_fn
 from torch.optim import Adam
 
 from animaldet.engine.registry import TRAINER_BUILDERS
@@ -48,12 +47,33 @@ def build_herdnet_trainer(cfg: Dict[str, Any]) -> HerdNetTrainer:
     # Build model
     model = build_model(herdnet_cfg.model)
 
+    # Load checkpoint if resuming
+    if herdnet_cfg.trainer.resume_from_checkpoint is not None:
+        checkpoint_path = herdnet_cfg.trainer.resume_from_checkpoint
+        print(f"Loading checkpoint from {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path, map_location='cpu')
+
+        # Load model state
+        if 'model_state_dict' in checkpoint:
+            model.load_state_dict(checkpoint['model_state_dict'])
+        else:
+            model.load_state_dict(checkpoint)
+
+        print(f"Checkpoint loaded successfully")
+
     # Build optimizer
     optimizer = Adam(
         model.parameters(),
         lr=herdnet_cfg.optimizer.lr,
         weight_decay=herdnet_cfg.optimizer.weight_decay
     )
+
+    # Load optimizer state if resuming
+    if herdnet_cfg.trainer.resume_from_checkpoint is not None:
+        checkpoint = torch.load(herdnet_cfg.trainer.resume_from_checkpoint, map_location='cpu')
+        if 'optimizer_state_dict' in checkpoint:
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            print("Optimizer state loaded")
 
     # Build validation dataloader
     # Note: batch_size=1 required for HerdNet evaluator

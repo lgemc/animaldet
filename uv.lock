@@ -79,6 +79,7 @@ dependencies = [
     { name = "rfdetr" },
     { name = "tensorboard" },
     { name = "torch" },
+    { name = "wandb" },
 ]
 
 [package.dev-dependencies]
@@ -102,6 +103,7 @@ requires-dist = [
     { name = "rfdetr", git = "https://github.com/roboflow/rf-detr" },
     { name = "tensorboard", specifier = ">=2.20.0" },
     { name = "torch", specifier = ">=2.8.0" },
+    { name = "wandb", specifier = ">=0.22.2" },
 ]
 
 [package.metadata.requires-dev]

@@ -199,11 +199,18 @@ class HerdNetTrainer:
 
             result = original_eval(returns=returns, wandb_flag=wandb_flag, viz=viz, log_meters=log_meters)
 
-            # Handle None return (can happen when metrics can't be computed)
+            # Handle None return (can happen when metrics can't be computed or returns='all')
             if result is None:
-                result = 0.0
+                # If returns='all', try to get f1_score as default
+                if returns == 'all' and hasattr(self.trainer.evaluator, 'metrics'):
+                    try:
+                        result = self.trainer.evaluator.metrics.fbeta_score()
+                    except Exception:
+                        result = 0.0
+                else:
+                    result = 0.0
 
-            # After eval - gather metrics
+            # After eval - gather all metrics (not just the returned one)
             eval_metrics = self._gather_eval_metrics(returns, result)
             self.hook_manager.after_eval(self, eval_metrics)
 
@@ -225,13 +232,34 @@ class HerdNetTrainer:
                 self.metrics[name] = meter.value
 
     def _gather_eval_metrics(self, metric_name: str, metric_value: float) -> Dict[str, Any]:
-        """Gather evaluation metrics into a dictionary."""
+        """Gather evaluation metrics into a dictionary.
+
+        Note: Don't add 'eval/' prefix here - the loggers will add it automatically.
+        """
         metrics = {metric_name: metric_value}
 
         # Try to get additional metrics from evaluator if available
         if hasattr(self.trainer, 'evaluator') and self.trainer.evaluator is not None:
-            if hasattr(self.trainer.evaluator, 'metrics_dict'):
-                metrics.update(self.trainer.evaluator.metrics_dict)
+            evaluator = self.trainer.evaluator
+
+            # Check if evaluator has metrics dict
+            if hasattr(evaluator, 'metrics_dict'):
+                metrics.update(evaluator.metrics_dict)
+            # Otherwise, try to extract from the evaluator's metrics object
+            elif hasattr(evaluator, 'metrics'):
+                try:
+                    eval_metrics = evaluator.metrics
+                    # Compute all standard metrics (without eval/ prefix - loggers add it)
+                    metrics.update({
+                        'recall': eval_metrics.recall(),
+                        'precision': eval_metrics.precision(),
+                        'f1_score': eval_metrics.fbeta_score(),
+                        'mae': eval_metrics.mae(),
+                        'mse': eval_metrics.mse(),
+                        'rmse': eval_metrics.rmse(),
+                    })
+                except Exception:
+                    pass  # Metrics not yet computed or unavailable
 
         return metrics
 

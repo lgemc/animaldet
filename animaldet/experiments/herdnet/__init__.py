@@ -12,6 +12,7 @@ from .adapters.config import (
     OptimizerConfig,
     TrainerConfig,
     EvaluatorConfig,
+    InferenceConfig,
     LossConfig
 )
 from .adapters.model import build_model
@@ -24,6 +25,11 @@ from .adapters.dataset import (
 from .adapters.trainer import build_trainer, build_optimizer
 from .adapters.evaluator import build_evaluator, evaluate
 from .trainer import HerdNetTrainer
+from .inference import HerdNetInference
+
+# Import to trigger registration
+from . import builder  # noqa: F401
+from . import inference_builder  # noqa: F401
 
 __all__ = [
     # Config
@@ -33,6 +39,7 @@ __all__ = [
     "OptimizerConfig",
     "TrainerConfig",
     "EvaluatorConfig",
+    "InferenceConfig",
     "LossConfig",
     # Builders
     "build_model",
@@ -47,4 +54,6 @@ __all__ = [
     "evaluate",
     # Trainer
     "HerdNetTrainer",
+    # Inference
+    "HerdNetInference",
 ]
