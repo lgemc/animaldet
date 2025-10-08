@@ -36,6 +36,9 @@ def _make_args_namespace(data_cfg: DataConfig, model_cfg: ModelConfig, image_set
     args.dataset_file = data_cfg.dataset_file
     args.dataset_dir = data_cfg.dataset_dir
 
+    # RF-DETR expects coco_path for COCO dataset
+    args.coco_path = data_cfg.dataset_dir
+
     # For COCO format datasets
     if data_cfg.train_annotation:
         args.train_annotation = data_cfg.train_annotation

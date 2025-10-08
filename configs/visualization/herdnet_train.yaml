@@ -1,0 +1,8 @@
+# HerdNet train dataset visualization config
+dataset_type: herdnet
+csv_path: data/herdnet/train_patches.csv
+images_dir: data/herdnet/train_patches
+name: herdnet_train
+persistent: false
+point_radius: 10
+database_uri: mongodb://localhost:27017

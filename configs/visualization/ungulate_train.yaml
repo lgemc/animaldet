@@ -1,0 +1,7 @@
+# Ungulate train dataset visualization config
+dataset_type: ungulate
+csv_path: data/ungulate/train_patches/gt.csv
+images_dir: data/ungulate/train_patches
+name: ungulate_train
+persistent: false
+database_uri: mongodb://localhost:27017

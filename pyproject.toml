@@ -19,6 +19,7 @@ dependencies = [
 dev = [
     "albumentations>=2.0.8",
     "animaloc",
+    "fiftyone>=1.0.0",
     "matplotlib>=3.10.6",
     "pillow>=11.3.0",
     "scikit-learn>=1.7.2",
@@ -26,6 +27,9 @@ dev = [
     "tqdm>=4.67.1",
     "wandb>=0.22.2",
 ]
+
+[project.scripts]
+visualize-dataset = "tools.data.visualization:main"
 
 [tool.uv.sources]
 animaloc = { git = "https://github.com/Alexandre-Delplanque/HerdNet/" }
