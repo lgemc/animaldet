@@ -1,15 +1,17 @@
 """Configuration dataclasses for RF-DETR experiments."""
 
 from dataclasses import dataclass, field
-from typing import Optional, Literal
+from typing import Optional, Any
 from omegaconf import MISSING
+
+from animaldet.config import ExperimentMetadata
 
 
 @dataclass
 class ModelConfig:
     """RF-DETR model configuration."""
-    # Model variant
-    variant: Literal["nano", "small", "medium", "base", "large"] = "medium"
+    # Model variant (nano, small, medium, base, large)
+    variant: str = "medium"
 
     # Model architecture params
     num_classes: int = MISSING
@@ -46,6 +48,28 @@ class ModelConfig:
     # Loss settings
     ia_bce_loss: bool = True
     cls_loss_coef: float = 1.0
+    bbox_loss_coef: float = 5.0
+    giou_loss_coef: float = 2.0
+
+    # Auxiliary loss settings
+    aux_loss: bool = True
+
+    # Matcher cost weights
+    set_cost_class: float = 2.0
+    set_cost_bbox: float = 5.0
+    set_cost_giou: float = 2.0
+    focal_alpha: float = 0.25
+
+    # Advanced loss options
+    sum_group_losses: bool = False
+    use_varifocal_loss: bool = False
+    use_position_supervised_loss: bool = False
+
+    # Segmentation settings (optional)
+    segmentation_head: bool = False
+    mask_ce_loss_coef: float = 5.0
+    mask_dice_loss_coef: float = 5.0
+    mask_point_sample_ratio: int = 16
 
     # Pretrained weights
     pretrain_weights: Optional[str] = None
@@ -55,8 +79,8 @@ class ModelConfig:
 @dataclass
 class DataConfig:
     """Dataset configuration for RF-DETR."""
-    # Dataset paths
-    dataset_file: Literal["coco", "o365", "roboflow"] = "roboflow"
+    # Dataset paths (coco, o365, roboflow)
+    dataset_file: str = "roboflow"
     dataset_dir: str = MISSING
     train_annotation: Optional[str] = None  # For COCO format
     val_annotation: Optional[str] = None
@@ -128,14 +152,24 @@ class EvaluatorConfig:
     confidence_threshold: float = 0.5
     nms_threshold: float = 0.45
     eval_on_ema: bool = True
+    metrics: Optional[dict[str, Any]] = None
+
+
+@dataclass
+class IntegrationsConfig:
+    """Integrations configuration (WandB, TensorBoard, etc.)."""
+    wandb: Optional[dict[str, Any]] = None
+    tensorboard: Optional[dict[str, Any]] = None
 
 
 @dataclass
 class RFDETRExperimentConfig:
     """Complete RF-DETR experiment configuration."""
+    experiment: ExperimentMetadata = field(default_factory=ExperimentMetadata)
     model: ModelConfig = field(default_factory=ModelConfig)
     data: DataConfig = field(default_factory=DataConfig)
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     trainer: TrainerConfig = field(default_factory=TrainerConfig)
     evaluator: EvaluatorConfig = field(default_factory=EvaluatorConfig)
+    integrations: Optional[IntegrationsConfig] = None
     seed: int = 9292

@@ -1,5 +1,8 @@
 """
 Logger hooks for tracking training and evaluation metrics.
+
+Note: TensorBoardLogger and WandbLogger have been moved to animaldet.utils.integrations
+for better feature support and lazy loading.
 """
 
 import time
@@ -101,7 +104,19 @@ class ConsoleLogger(Hook):
 
         formatted = []
         for key, value in metrics.items():
-            if isinstance(value, float):
+            if isinstance(value, dict):
+                # Handle nested metrics (like F1 scores)
+                for sub_key, sub_value in value.items():
+                    if isinstance(sub_value, float):
+                        formatted.append(f"{key}.{sub_key}: {sub_value:{self.metric_format}}")
+                    elif isinstance(sub_value, dict):
+                        # Handle double-nested metrics
+                        for ssub_key, ssub_value in sub_value.items():
+                            if isinstance(ssub_value, (int, float)):
+                                formatted.append(f"{key}.{sub_key}.{ssub_key}: {ssub_value:{self.metric_format}}")
+                    else:
+                        formatted.append(f"{key}.{sub_key}: {sub_value}")
+            elif isinstance(value, float):
                 formatted.append(f"{key}: {value:{self.metric_format}}")
             else:
                 formatted.append(f"{key}: {value}")

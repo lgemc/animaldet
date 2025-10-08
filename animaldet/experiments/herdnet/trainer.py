@@ -10,10 +10,8 @@ from animaloc.train import Trainer as AnimalocTrainer
 from animaloc.models import LossWrapper
 
 from animaldet.engine.hooks import HookManager, Hook
-from animaldet.engine.registry import TRAINERS
 
 
-@TRAINERS.register()
 class HerdNetTrainer:
     """
     PyTorch Lightning-style trainer wrapper with hook support.
@@ -108,8 +106,6 @@ class HerdNetTrainer:
             return result
 
         def wrapped_evaluator_prepare(filename, epoch):
-            # Before eval
-            self.hook_manager.before_eval(self)
             if original_prepare_evaluator:
                 return original_prepare_evaluator(filename, epoch)
 
@@ -197,8 +193,15 @@ class HerdNetTrainer:
 
         original_eval = self.trainer.evaluator.evaluate
 
-        def wrapped_eval(returns='f1_score', viz=False):
-            result = original_eval(returns=returns, viz=viz)
+        def wrapped_eval(returns='f1_score', wandb_flag=False, viz=False, log_meters=True):
+            # Before eval
+            self.hook_manager.before_eval(self)
+
+            result = original_eval(returns=returns, wandb_flag=wandb_flag, viz=viz, log_meters=log_meters)
+
+            # Handle None return (can happen when metrics can't be computed)
+            if result is None:
+                result = 0.0
 
             # After eval - gather metrics
             eval_metrics = self._gather_eval_metrics(returns, result)

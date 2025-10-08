@@ -1,0 +1,40 @@
+# Weights & Biases (wandb) integration configuration
+
+# Enable or disable wandb logging
+enabled: false
+
+# Project name in wandb
+project: animaldet
+
+# Run name (null for auto-generated)
+name: null
+
+# Run notes
+notes: null
+
+# Run tags
+tags: []
+
+# Entity (team name, null for default user)
+entity: null
+
+# Directory to store wandb files (null for default)
+dir: null
+
+# Logging mode: online, offline, or disabled
+mode: online
+
+# Log interval (steps between wandb logging)
+log_interval: 10
+
+# Log model checkpoints to wandb
+log_checkpoints: false
+
+# Log gradients
+log_gradients: false
+
+# Log learning rate
+log_lr: true
+
+# Additional wandb init kwargs
+init_kwargs: {}

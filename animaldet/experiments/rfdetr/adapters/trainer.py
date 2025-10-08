@@ -6,6 +6,7 @@ import torch
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from typing import Optional, Dict, Any
+from argparse import Namespace
 
 # Add rf-detr to path
 rfdetr_path = Path("/home/lmanrique/Do/rf-detr")
@@ -34,16 +35,18 @@ def build_optimizer(
     Returns:
         Optimizer instance
     """
+    # Create args namespace for get_param_dict
+    args = Namespace()
+    args.lr = optimizer_cfg.lr
+    args.lr_encoder = optimizer_cfg.lr_encoder
+    args.weight_decay = optimizer_cfg.weight_decay
+    args.lr_vit_layer_decay = optimizer_cfg.lr_vit_layer_decay
+    args.lr_component_decay = optimizer_cfg.lr_component_decay
+    args.out_feature_indexes = model_cfg.out_feature_indexes
+
     # Get parameter groups with different learning rates
     # This follows RF-DETR's strategy of different LRs for encoder/decoder
-    param_dicts = get_param_dict(
-        model=model,
-        lr=optimizer_cfg.lr,
-        lr_encoder=optimizer_cfg.lr_encoder,
-        weight_decay=optimizer_cfg.weight_decay,
-        lr_vit_layer_decay=optimizer_cfg.lr_vit_layer_decay,
-        lr_component_decay=optimizer_cfg.lr_component_decay
-    )
+    param_dicts = get_param_dict(args, model)
 
     optimizer = AdamW(
         param_dicts,
@@ -130,13 +133,43 @@ def build_criterion_and_postprocessors(model_cfg: ModelConfig):
     from rfdetr.models import build_criterion_and_postprocessors as build_rfdetr_criterion
     from argparse import Namespace
 
-    # Create args namespace for rfdetr
+    # Create args namespace for rfdetr with all required attributes
     args = Namespace()
+
+    # Core settings
+    args.device = model_cfg.device
     args.num_classes = model_cfg.num_classes
-    args.ia_bce_loss = model_cfg.ia_bce_loss
-    args.cls_loss_coef = model_cfg.cls_loss_coef
     args.group_detr = model_cfg.group_detr
     args.num_select = model_cfg.num_select
+
+    # Loss coefficients
+    args.cls_loss_coef = model_cfg.cls_loss_coef
+    args.bbox_loss_coef = model_cfg.bbox_loss_coef
+    args.giou_loss_coef = model_cfg.giou_loss_coef
+
+    # Matcher cost weights
+    args.set_cost_class = model_cfg.set_cost_class
+    args.set_cost_bbox = model_cfg.set_cost_bbox
+    args.set_cost_giou = model_cfg.set_cost_giou
+    args.focal_alpha = model_cfg.focal_alpha
+
+    # Auxiliary loss settings
+    args.aux_loss = model_cfg.aux_loss
+    args.dec_layers = model_cfg.dec_layers
+    args.two_stage = model_cfg.two_stage
+
+    # Advanced loss options
+    args.sum_group_losses = model_cfg.sum_group_losses
+    args.use_varifocal_loss = model_cfg.use_varifocal_loss
+    args.use_position_supervised_loss = model_cfg.use_position_supervised_loss
+    args.ia_bce_loss = model_cfg.ia_bce_loss
+
+    # Segmentation settings (optional)
+    args.segmentation_head = model_cfg.segmentation_head
+    if model_cfg.segmentation_head:
+        args.mask_ce_loss_coef = model_cfg.mask_ce_loss_coef
+        args.mask_dice_loss_coef = model_cfg.mask_dice_loss_coef
+        args.mask_point_sample_ratio = model_cfg.mask_point_sample_ratio
 
     criterion, postprocessors = build_rfdetr_criterion(args)
 

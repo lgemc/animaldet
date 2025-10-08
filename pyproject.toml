@@ -10,6 +10,7 @@ dependencies = [
     "omegaconf>=2.3.0",
     "pandas>=2.3.3",
     "rfdetr",
+    "tensorboard>=2.20.0",
     "torch>=2.8.0",
 ]
 

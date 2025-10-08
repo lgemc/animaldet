@@ -234,6 +234,7 @@ def save_batch_images(
     patches: List[torch.Tensor],
     base_name: str,
     dest_dir: str,
+    patch_size: Optional[Tuple[int, int]] = None,
 ) -> None:
     """
     Save a batch of patches to disk.
@@ -242,17 +243,29 @@ def save_batch_images(
         patches: List of patch tensors
         base_name: Base name for the image
         dest_dir: Destination directory
+        patch_size: Expected patch size (height, width). If provided, pads patches to this size.
     """
     os.makedirs(dest_dir, exist_ok=True)
 
     base_stem = Path(base_name).stem
     base_suffix = Path(base_name).suffix
 
+    # Create padder if patch_size is specified
+    padder = None
+    if patch_size is not None:
+        padder = PadIfNeeded(
+            min_height=patch_size[0],
+            min_width=patch_size[1],
+            position="top_left",
+            border_mode=cv2.BORDER_CONSTANT,
+            value=0
+        )
+
     for idx, patch in enumerate(patches):
         patch_name = f"{base_stem}_patch_{idx:04d}{base_suffix}"
         patch_path = os.path.join(dest_dir, patch_name)
 
-        # Convert tensor to PIL Image
+        # Convert tensor to numpy array
         if isinstance(patch, torch.Tensor):
             if patch.ndim == 3 and patch.shape[0] in [1, 3]:  # (C, H, W)
                 patch = patch.permute(1, 2, 0)
@@ -260,6 +273,10 @@ def save_batch_images(
 
         if patch.dtype != np.uint8:
             patch = (patch * 255).astype(np.uint8)
+
+        # Pad if necessary
+        if padder is not None:
+            patch = padder(image=patch)['image']
 
         img = Image.fromarray(patch)
         img.save(patch_path)
@@ -342,4 +359,4 @@ def extract_patches(
             # Save all patches
             patcher = ImagePatcher(img_array, patch_size, overlap)
             patches = patcher.make_patches()
-            save_batch_images(patches, img_name, dest_dir)
+            save_batch_images(patches, img_name, dest_dir, patch_size=patch_size)

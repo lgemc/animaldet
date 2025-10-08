@@ -1,8 +1,10 @@
 """Configuration dataclasses for HerdNet experiments."""
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 from omegaconf import MISSING
+
+from animaldet.config import ExperimentMetadata
 
 
 @dataclass
@@ -82,9 +84,11 @@ class EvaluatorConfig:
 @dataclass
 class HerdNetExperimentConfig:
     """Complete HerdNet experiment configuration."""
+    experiment: ExperimentMetadata = field(default_factory=ExperimentMetadata)
     model: ModelConfig = field(default_factory=ModelConfig)
     data: DataConfig = field(default_factory=DataConfig)
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     trainer: TrainerConfig = field(default_factory=TrainerConfig)
     evaluator: EvaluatorConfig = field(default_factory=EvaluatorConfig)
+    integrations: dict[str, Any] = field(default_factory=dict)
     seed: int = 9292

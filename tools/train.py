@@ -17,9 +17,11 @@ from typing import Any, Dict
 import torch
 from omegaconf import OmegaConf
 
-from animaldet.engine.registry import TRAINERS
-from animaldet.experiments.herdnet.builder import build_herdnet_trainer
-from animaldet.experiments.rfdetr.builder import build_rfdetr_trainer
+from animaldet.engine.registry import TRAINER_BUILDERS
+
+# Import builders to ensure they are registered
+from animaldet.experiments.herdnet import builder as _  # noqa: F401
+from animaldet.experiments.rfdetr import builder as __  # noqa: F401
 
 
 def parse_args() -> argparse.Namespace:
@@ -39,7 +41,7 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="Trainer name from registry (overrides config). Available: "
-             f"{', '.join(TRAINERS.registry_names)}"
+             f"{', '.join(TRAINER_BUILDERS.registry_names)}"
     )
     parser.add_argument(
         "--work-dir",
@@ -113,8 +115,8 @@ def set_random_seed(seed: int) -> None:
 def build_trainer_from_config(cfg: Dict[str, Any], trainer_name: str = None) -> Any:
     """Build trainer from configuration.
 
-    This function is experiment-agnostic and delegates to the experiment-specific
-    builder functions to handle setup.
+    This function is experiment-agnostic and uses the registry to find
+    the appropriate builder function.
 
     Args:
         cfg: Configuration dictionary
@@ -128,35 +130,17 @@ def build_trainer_from_config(cfg: Dict[str, Any], trainer_name: str = None) -> 
         name = trainer_name
     elif "trainer" in cfg and "name" in cfg["trainer"]:
         name = cfg["trainer"]["name"]
-    elif len(TRAINERS) == 1:
-        name = TRAINERS.registry_names[0]
+    elif len(TRAINER_BUILDERS) == 1:
+        name = TRAINER_BUILDERS.registry_names[0]
     else:
         raise ValueError(
             "Please specify a trainer name. "
-            f"Available: {TRAINERS.registry_names}"
+            f"Available: {TRAINER_BUILDERS.registry_names}"
         )
 
-    # Validate trainer exists
-    if name not in TRAINERS:
-        raise ValueError(
-            f"Trainer '{name}' not found in registry. "
-            f"Available: {TRAINERS.registry_names}"
-        )
-
-    # Map trainer names to their builder functions
-    builder_map = {
-        "HerdNetTrainer": build_herdnet_trainer,
-        "RFDETRTrainer": build_rfdetr_trainer,
-    }
-
-    if name not in builder_map:
-        raise NotImplementedError(
-            f"No builder function registered for trainer '{name}'. "
-            f"Please add it to the builder_map in tools/train.py"
-        )
-
-    # Use the builder function to create the trainer
-    trainer = builder_map[name](cfg)
+    # Get builder function from registry and build trainer
+    builder_fn = TRAINER_BUILDERS[name]
+    trainer = builder_fn(cfg)
 
     return trainer
 
@@ -199,7 +183,7 @@ def main():
     logger.info(f"Starting training with config: {args.config}")
     logger.info(f"Device: {args.device}")
     logger.info(f"Random seed: {seed}")
-    logger.info(f"Available trainers: {TRAINERS.registry_names}")
+    logger.info(f"Available trainers: {TRAINER_BUILDERS.registry_names}")
 
     # Build trainer
     logger.info("Building trainer from configuration...")

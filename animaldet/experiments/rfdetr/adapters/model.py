@@ -39,7 +39,7 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> torch.nn.Module:
         device: Device to place model on
 
     Returns:
-        RF-DETR model instance
+        RF-DETR model instance (PyTorch nn.Module)
     """
     # Get the appropriate model class
     model_class = MODEL_VARIANTS.get(cfg.variant.lower())
@@ -52,20 +52,33 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> torch.nn.Module:
     # Build model kwargs from config
     model_kwargs: Dict[str, Any] = {
         "num_classes": cfg.num_classes,
+        "patch_size": cfg.patch_size,
+        "num_windows": cfg.num_windows,
+        "hidden_dim": cfg.hidden_dim,
+        "dec_layers": cfg.dec_layers,
+        "sa_nheads": cfg.sa_nheads,
+        "ca_nheads": cfg.ca_nheads,
+        "dec_n_points": cfg.dec_n_points,
+        "num_queries": cfg.num_queries,
+        "num_select": cfg.num_select,
+        "projector_scale": cfg.projector_scale,
+        "out_feature_indexes": cfg.out_feature_indexes,
+        "positional_encoding_size": cfg.positional_encoding_size,
+        "resolution": cfg.resolution,
     }
 
     # Add optional pretrained weights
     if cfg.pretrain_weights:
         model_kwargs["pretrain_weights"] = cfg.pretrain_weights
 
-    # Create model instance
-    model = model_class(**model_kwargs)
+    # Create model instance (this is a wrapper: RFDETR class)
+    rfdetr_wrapper = model_class(**model_kwargs)
 
-    # Move to device
-    if device == "cuda" and torch.cuda.is_available():
-        model = model.cuda()
-    else:
-        model = model.to(device)
+    # Extract the actual PyTorch model from the nested wrappers
+    # rfdetr_wrapper.model is a Model instance
+    # rfdetr_wrapper.model.model is the actual PyTorch LWDETR module
+    # Note: The model is already moved to the correct device in Model.__init__
+    model = rfdetr_wrapper.model.model
 
     return model
 

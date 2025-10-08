@@ -10,7 +10,6 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 
 from animaldet.engine.hooks import HookManager, Hook
-from animaldet.engine.registry import TRAINERS
 
 # Import RF-DETR training utilities
 import sys
@@ -18,12 +17,12 @@ rfdetr_path = Path("/home/lmanrique/Do/rf-detr")
 if str(rfdetr_path) not in sys.path:
     sys.path.insert(0, str(rfdetr_path))
 
-from rfdetr.engine import train_one_epoch, evaluate as rfdetr_evaluate
+from rfdetr.engine import train_one_epoch
 from rfdetr.util.utils import BestMetricHolder
 from collections import defaultdict
+from animaldet.experiments.rfdetr.evaluation import evaluate_with_metrics
 
 
-@TRAINERS.register()
 class RFDETRTrainer:
     """
     PyTorch Lightning-style trainer wrapper for RF-DETR with hook support.
@@ -58,7 +57,8 @@ class RFDETRTrainer:
         device: str = "cuda",
         args: Optional[Any] = None,
         hooks: Optional[list[Hook]] = None,
-        work_dir: str = "./output"
+        work_dir: str = "./output",
+        cfg: Optional[Any] = None
     ):
         self.model = model
         self.criterion = criterion
@@ -72,6 +72,7 @@ class RFDETRTrainer:
         self.args = args
         self.work_dir = Path(work_dir)
         self.work_dir.mkdir(parents=True, exist_ok=True)
+        self.cfg = cfg
 
         # Hook management
         self.hook_manager = HookManager(hooks or [])
@@ -164,21 +165,29 @@ class RFDETRTrainer:
 
             # Validation
             if self.val_loader is not None:
-                self.hook_manager.before_validation(self, epoch)
+                self.hook_manager.before_eval(self)
 
-                val_stats = rfdetr_evaluate(
+                # Get base dataset for class names
+                base_ds = self.val_loader.dataset.coco if hasattr(self.val_loader.dataset, 'coco') else None
+
+                val_stats, _, predictions, ground_truths, class_names = evaluate_with_metrics(
                     model=self.ema_model.module if self.ema_model else self.model,
                     criterion=self.criterion,
                     postprocessors=self.postprocessors,
                     data_loader=self.val_loader,
-                    base_ds=None,  # Will be inferred from val_loader
+                    base_ds=base_ds,
                     device=self.device,
-                    output_dir=str(self.work_dir),
-                    args=self.args
+                    args=self.args,
+                    collect_for_metrics=True
                 )
 
+                # Store for metric hooks to access
+                self.eval_predictions = predictions
+                self.eval_ground_truths = ground_truths
+                self.class_names = class_names
+
                 self.metrics.update(val_stats)
-                self.hook_manager.after_validation(self, epoch)
+                self.hook_manager.after_eval(self, self.metrics)
 
             # After epoch hook
             self.hook_manager.after_epoch(self, epoch)

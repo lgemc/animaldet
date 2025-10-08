@@ -1,5 +1,6 @@
 """Dataset builders for HerdNet experiments."""
 
+import warnings
 import albumentations as A
 from torch.utils.data import DataLoader
 from animaloc.datasets import CSVDataset
@@ -11,6 +12,9 @@ from animaloc.data.transforms import (
 )
 
 from .config import DataConfig, ModelConfig
+
+# Suppress albumentations keypoint warnings for image-only transforms
+warnings.filterwarnings('ignore', message='Got processor for keypoints')
 
 
 def build_train_dataset(data_cfg: DataConfig, model_cfg: ModelConfig) -> CSVDataset:

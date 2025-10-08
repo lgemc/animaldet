@@ -1,0 +1,31 @@
+# TensorBoard integration configuration
+
+# Enable or disable tensorboard logging
+enabled: false
+
+# Directory to store tensorboard logs (relative to work_dir or absolute path)
+log_dir: outputs/tensorboard
+
+# Log interval (steps between tensorboard logging)
+log_interval: 10
+
+# Flush interval in seconds (how often to write to disk)
+flush_secs: 120
+
+# Log histograms of model parameters
+log_histograms: false
+
+# Log model graph
+log_graph: false
+
+# Log gradients
+log_gradients: false
+
+# Log learning rate
+log_lr: true
+
+# Log images (if supported by trainer)
+log_images: false
+
+# Maximum number of images to log per batch
+max_images: 8

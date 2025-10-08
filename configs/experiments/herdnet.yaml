@@ -32,7 +32,6 @@ model:
 data:
   patch_size: 512
 
-  # Update these paths to your actual data locations
   train_csv: ${oc.env:DATA_DIR,./data}/herdnet/train_patches.csv
   train_root: ${oc.env:DATA_DIR,./data}/herdnet/train_patches
   val_csv: ${oc.env:DATA_DIR,./data}/herdnet/val_patches/gt.csv
@@ -83,5 +82,5 @@ integrations:
     project: animaldet
     notes: HerdNet baseline experiment for animal detection in aerial imagery
   tensorboard:
-    enabled: false
-    log_dir: tensorboard/${experiment.name}
+    enabled: true
+    log_dir: outputs/tensorboard/${experiment.name}

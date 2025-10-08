@@ -11,6 +11,7 @@ if str(rfdetr_path) not in sys.path:
     sys.path.insert(0, str(rfdetr_path))
 
 from rfdetr.datasets import build_dataset
+from rfdetr.util.misc import collate_fn
 
 from .config import DataConfig, ModelConfig
 
@@ -49,6 +50,8 @@ def _make_args_namespace(data_cfg: DataConfig, model_cfg: ModelConfig, image_set
 
     # Model settings needed for transforms
     args.num_classes = model_cfg.num_classes
+    args.patch_size = model_cfg.patch_size
+    args.num_windows = model_cfg.num_windows
 
     # Class names
     if data_cfg.class_names:
@@ -143,7 +146,8 @@ def build_dataloaders(
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        collate_fn=lambda x: x  # RF-DETR uses list collation
+        collate_fn=collate_fn,
+        drop_last=True  # Drop incomplete batches to ensure batch_size is constant for gradient accumulation
     )
 
     val_loader = DataLoader(
@@ -151,7 +155,7 @@ def build_dataloaders(
         batch_size=1,
         shuffle=False,
         num_workers=num_workers,
-        collate_fn=lambda x: x
+        collate_fn=collate_fn
     )
 
     # Test loader is optional
@@ -163,7 +167,7 @@ def build_dataloaders(
             batch_size=1,
             shuffle=False,
             num_workers=num_workers,
-            collate_fn=lambda x: x
+            collate_fn=collate_fn
         )
     except Exception:
         # Test set may not be available
