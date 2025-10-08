@@ -1,9 +1,9 @@
 """CLI tool to visualize datasets with FiftyOne."""
 
 import argparse
+import os
 from pathlib import Path
 
-import fiftyone as fo
 from omegaconf import OmegaConf
 
 from animaldet.visualization import load_herdnet_dataset, load_ungulate_dataset
@@ -57,6 +57,12 @@ def main():
         action="store_true",
         help="Launch in remote mode (for SSH sessions)",
     )
+    parser.add_argument(
+        "--max-samples",
+        type=int,
+        default=None,
+        help="Maximum number of samples to load (for debugging)",
+    )
 
     args = parser.parse_args()
 
@@ -68,6 +74,8 @@ def main():
         images_dir = config.images_dir
         name = config.name
         persistent = config.get("persistent", False)
+        database_uri = config.get("database_uri", None)
+        max_samples = args.max_samples or config.get("max_samples", None)
     else:
         # Use CLI arguments
         if not args.dataset_type or not args.csv_path or not args.images_dir:
@@ -80,6 +88,17 @@ def main():
         images_dir = args.images_dir
         name = args.name
         persistent = args.persistent
+        database_uri = None
+        max_samples = args.max_samples
+
+    # Set database URI as environment variable BEFORE importing fiftyone
+    # This ensures it's picked up during initialization
+    if database_uri:
+        os.environ["FIFTYONE_DATABASE_URI"] = database_uri
+        print(f"Configured FiftyOne to use MongoDB at: {database_uri}")
+
+    # Import fiftyone AFTER setting environment variable
+    import fiftyone as fo
 
     # Convert to absolute paths
     csv_path = Path(csv_path).absolute()
@@ -87,12 +106,16 @@ def main():
 
     # Load dataset
     print(f"Loading {dataset_type} dataset from {csv_path}")
+    if max_samples:
+        print(f"Limiting to {max_samples} samples for debugging")
     if dataset_type == "ungulate":
         dataset = load_ungulate_dataset(
             csv_path=csv_path,
             images_dir=images_dir,
             name=name,
             persistent=persistent,
+            database_uri=database_uri,
+            max_samples=max_samples,
         )
     elif dataset_type == "herdnet":
         dataset = load_herdnet_dataset(
@@ -100,6 +123,7 @@ def main():
             images_dir=images_dir,
             name=name,
             persistent=persistent,
+            database_uri=database_uri,
         )
     else:
         raise ValueError(f"Unknown dataset type: {dataset_type}")

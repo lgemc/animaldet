@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Optional
 
 import fiftyone as fo
-import fiftyone.core.config as foc
 import pandas as pd
 
 
@@ -14,6 +13,8 @@ def load_ungulate_dataset(
     images_dir: str | Path,
     name: str = "ungulate",
     persistent: bool = False,
+    database_uri: Optional[str] = None,
+    max_samples: Optional[int] = None,
 ) -> fo.Dataset:
     """Load ungulate dataset with bounding box annotations into FiftyOne.
 
@@ -22,10 +23,16 @@ def load_ungulate_dataset(
         images_dir: Directory containing the patch images
         name: Dataset name in FiftyOne
         persistent: Whether to persist dataset to database
+        database_uri: MongoDB connection URI (e.g., mongodb://localhost:27017)
+        max_samples: Maximum number of samples to load (None for all)
 
     Returns:
         FiftyOne dataset with bbox detections
     """
+    # Configure database URI if provided
+    if database_uri:
+        fo.config.database_uri = database_uri
+
     csv_path = Path(csv_path)
     images_dir = Path(images_dir)
 
@@ -43,7 +50,9 @@ def load_ungulate_dataset(
 
     # Group by image
     samples = []
-    for image_name, group in df.groupby("images"):
+    for idx, (image_name, group) in enumerate(df.groupby("images")):
+        if max_samples is not None and idx >= max_samples:
+            break
         image_path = images_dir / image_name
 
         if not image_path.exists():
@@ -95,6 +104,7 @@ def load_herdnet_dataset(
     name: str = "herdnet",
     persistent: bool = False,
     point_radius: int = 10,
+    database_uri: Optional[str] = None,
 ) -> fo.Dataset:
     """Load HerdNet dataset with point annotations into FiftyOne.
 
@@ -104,10 +114,15 @@ def load_herdnet_dataset(
         name: Dataset name in FiftyOne
         persistent: Whether to persist dataset to database
         point_radius: Radius for converting points to bboxes for visualization
+        database_uri: MongoDB connection URI (e.g., mongodb://localhost:27017)
 
     Returns:
         FiftyOne dataset with keypoint detections
     """
+    # Configure database URI if provided
+    if database_uri:
+        fo.config.database_uri = database_uri
+
     csv_path = Path(csv_path)
     images_dir = Path(images_dir)
 

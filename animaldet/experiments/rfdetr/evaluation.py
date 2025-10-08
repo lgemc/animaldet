@@ -50,6 +50,17 @@ def evaluate_with_metrics(
     header = "Test:"
 
     iou_types = tuple(k for k in ("segm", "bbox") if k in postprocessors.keys())
+
+    # Ensure COCO dataset has 'info' field for API compatibility
+    if base_ds and hasattr(base_ds, 'dataset') and 'info' not in base_ds.dataset:
+        base_ds.dataset['info'] = {
+            'description': 'Custom Dataset',
+            'version': '1.0',
+            'year': 2025,
+            'contributor': 'animaldet',
+            'date_created': '2025/01/01'
+        }
+
     coco_evaluator = CocoEvaluator(base_ds, iou_types) if base_ds else None
 
     from torch.amp import autocast, GradScaler
