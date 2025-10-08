@@ -171,7 +171,10 @@ def build_criterion_and_postprocessors(model_cfg: ModelConfig):
         args.mask_dice_loss_coef = model_cfg.mask_dice_loss_coef
         args.mask_point_sample_ratio = model_cfg.mask_point_sample_ratio
 
-    criterion, postprocessors = build_rfdetr_criterion(args)
+    criterion, postprocessor = build_rfdetr_criterion(args)
+
+    # RF-DETR returns a PostProcess module, but we need a dict for compatibility
+    postprocessors = {"bbox": postprocessor}
 
     return criterion, postprocessors
 

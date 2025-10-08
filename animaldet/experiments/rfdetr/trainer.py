@@ -21,6 +21,7 @@ from rfdetr.engine import train_one_epoch
 from rfdetr.util.utils import BestMetricHolder
 from collections import defaultdict
 from animaldet.experiments.rfdetr.evaluation import evaluate_with_metrics
+from animaldet.evaluation.f1_evaluator import F1Evaluator
 
 
 class RFDETRTrainer:
@@ -185,6 +186,28 @@ class RFDETRTrainer:
                 self.eval_predictions = predictions
                 self.eval_ground_truths = ground_truths
                 self.class_names = class_names
+
+                # Compute F1 metrics if predictions and ground truths are available
+                if predictions and ground_truths:
+                    f1_evaluator = F1Evaluator(
+                        center_threshold=50.0,
+                        score_threshold=0.5,
+                        enabled=True,
+                        verbose=True
+                    )
+                    f1_metrics = f1_evaluator.evaluate(predictions, ground_truths, class_names)
+                    if f1_metrics:
+                        # Flatten F1 metrics for logging
+                        # Add overall metrics
+                        if 'overall' in f1_metrics:
+                            for key, value in f1_metrics['overall'].items():
+                                val_stats[f'f1_{key}'] = value
+
+                        # Add per-class metrics
+                        if 'per_class' in f1_metrics:
+                            for class_name, metrics in f1_metrics['per_class'].items():
+                                for metric_name, metric_value in metrics.items():
+                                    val_stats[f'f1_{class_name}_{metric_name}'] = metric_value
 
                 self.metrics.update(val_stats)
                 self.hook_manager.after_eval(self, self.metrics)

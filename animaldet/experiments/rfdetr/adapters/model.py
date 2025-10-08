@@ -19,6 +19,7 @@ from rfdetr.detr import (
 )
 
 from .config import ModelConfig
+from animaldet.engine.registry import MODELS
 
 
 MODEL_VARIANTS = {
@@ -122,3 +123,16 @@ def get_model_config_params(cfg: ModelConfig) -> Dict[str, Any]:
         "resolution": cfg.resolution,
         "num_classes": cfg.num_classes,
     }
+
+
+@MODELS.register("RFDETR")
+def build_rfdetr_model(cfg):
+    """Registered RF-DETR model builder for generic trainer.
+
+    Args:
+        cfg: Model configuration (should have structure of ModelConfig)
+
+    Returns:
+        RF-DETR model instance
+    """
+    return build_model(cfg)

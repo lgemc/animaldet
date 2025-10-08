@@ -66,7 +66,7 @@ trainer:
   select: max  # Options: 'max', 'min'
   validate_on: f1_score
   work_dir: ./output
-  resume_from_checkpoint: ./output/  # Path to checkpoint to resume from (e.g., './output/best_model.pth')
+  resume_from_checkpoint: null  # Path to checkpoint to resume from (e.g., './output/best_model.pth')
 
 # Evaluation configuration
 evaluator:

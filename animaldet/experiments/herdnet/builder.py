@@ -9,15 +9,16 @@ from typing import Dict, Any
 from omegaconf import OmegaConf
 
 from animaloc.train import Trainer as AnimalocTrainer
-from torch.optim import Adam
 
-from animaldet.engine.registry import TRAINER_BUILDERS
+from animaldet.engine.registry import TRAINER_BUILDERS, MODELS, OPTIMIZERS
 from animaldet.engine.hooks_builder import build_hooks_from_config, register_integration_hooks
 from animaldet.experiments.herdnet.trainer import HerdNetTrainer
 from animaldet.experiments.herdnet.adapters.dataset import build_train_dataset, build_val_dataset
-from animaldet.experiments.herdnet.adapters.model import build_model
 from animaldet.experiments.herdnet.adapters.evaluator import build_evaluator
 from animaldet.experiments.herdnet.adapters.config import HerdNetExperimentConfig
+
+# Import to register HerdNet model
+from animaldet.experiments.herdnet.adapters import model  # noqa: F401
 
 
 @TRAINER_BUILDERS.register("HerdNetTrainer")
@@ -44,12 +45,13 @@ def build_herdnet_trainer(cfg: Dict[str, Any]) -> HerdNetTrainer:
     train_dataset = build_train_dataset(herdnet_cfg.data, herdnet_cfg.model)
     val_dataset = build_val_dataset(herdnet_cfg.data, herdnet_cfg.model)
 
-    # Build model
-    model = build_model(herdnet_cfg.model)
+    # Build model using registry
+    model = MODELS.build("HerdNet", herdnet_cfg.model)
 
     # Load checkpoint if resuming
-    if herdnet_cfg.trainer.resume_from_checkpoint is not None:
-        checkpoint_path = herdnet_cfg.trainer.resume_from_checkpoint
+    from pathlib import Path
+    checkpoint_path = herdnet_cfg.trainer.resume_from_checkpoint
+    if checkpoint_path is not None and Path(checkpoint_path).is_file():
         print(f"Loading checkpoint from {checkpoint_path}")
         checkpoint = torch.load(checkpoint_path, map_location='cpu')
 
@@ -61,11 +63,11 @@ def build_herdnet_trainer(cfg: Dict[str, Any]) -> HerdNetTrainer:
 
         print(f"Checkpoint loaded successfully")
 
-    # Build optimizer
-    optimizer = Adam(
+    # Build optimizer using registry
+    optimizer = OPTIMIZERS.build(
+        herdnet_cfg.optimizer.name,
         model.parameters(),
-        lr=herdnet_cfg.optimizer.lr,
-        weight_decay=herdnet_cfg.optimizer.weight_decay
+        OmegaConf.to_container(herdnet_cfg.optimizer, resolve=True)
     )
 
     # Load optimizer state if resuming

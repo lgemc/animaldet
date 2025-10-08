@@ -34,7 +34,8 @@ def evaluate_with_metrics(
     """
 
     model.eval()
-    if args.fp16_eval:
+    fp16_eval = getattr(args, 'fp16_eval', False)
+    if fp16_eval:
         model.half()
 
     # Collect predictions and ground truths for F1
@@ -60,13 +61,13 @@ def evaluate_with_metrics(
         samples = samples.to(device)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-        if args.fp16_eval:
+        if fp16_eval:
             samples.tensors = samples.tensors.half()
 
         with autocast(**get_autocast_args(args)):
             outputs = model(samples)
 
-        if args.fp16_eval:
+        if fp16_eval:
             for key in outputs.keys():
                 if key == "enc_outputs":
                     for sub_key in outputs[key].keys():

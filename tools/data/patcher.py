@@ -40,6 +40,7 @@ def main(cfg: DictConfig) -> None:
     overlap = cfg.get("overlap", 0)
     csv_path = cfg.get("csv_path", None)
     min_visibility = cfg.get("min_visibility", 0.1)
+    min_area_ratio = cfg.get("min_area_ratio", 0.0)
     save_all = cfg.get("save_all", False)
 
     # Validate paths
@@ -62,6 +63,7 @@ def main(cfg: DictConfig) -> None:
         overlap=overlap,
         csv_path=csv_path,
         min_visibility=min_visibility,
+        min_area_ratio=min_area_ratio,
         save_all=save_all,
     )
 

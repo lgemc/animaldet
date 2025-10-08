@@ -10,8 +10,12 @@ patch_size: 512  # Height and width of patches in pixels
 overlap: 0       # Overlap between patches in pixels
 
 # Optional annotation handling
-csv_path: null           # Path to CSV with annotations (images, x, y, labels)
-min_visibility: 0.1      # Minimum fraction of annotation area to keep
+csv_path: null           # Path to CSV with annotations
+                         # Point format: images, x, y, labels (optional)
+                         # Bbox format: images, x_min, y_min, x_max, y_max, labels (optional)
+min_visibility: 0.1      # Minimum fraction of annotation area to keep (for bbox format)
+min_area_ratio: 0.0      # Minimum ratio of cropped bbox area to original bbox area (0.0-1.0)
+                         # Filters out bboxes that are cropped too small (e.g., 0.5 = keep only if >50% visible)
 save_all: false          # If false, only save patches with annotations
 
 # Example usage:

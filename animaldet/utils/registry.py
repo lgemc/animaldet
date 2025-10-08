@@ -80,6 +80,23 @@ class Registry:
         """Get list of all registered names."""
         return list(self._registered_objects.keys())
 
+    def build(self, key: str, *args, **kwargs) -> Any:
+        """Build an instance of a registered object.
+
+        Args:
+            key: Name of the registered object
+            *args: Positional arguments to pass to the constructor
+            **kwargs: Keyword arguments to pass to the constructor
+
+        Returns:
+            Instance of the registered object
+
+        Raises:
+            KeyError: If the key is not found in the registry
+        """
+        cls = self.get(key)
+        return cls(*args, **kwargs)
+
     def __getitem__(self, key: str) -> Any:
         """Get a registered object using bracket notation."""
         return self.get(key)

@@ -9,10 +9,9 @@ from typing import Dict, Any
 from omegaconf import OmegaConf
 from pathlib import Path
 
-from animaldet.engine.registry import TRAINER_BUILDERS
+from animaldet.engine.registry import TRAINER_BUILDERS, MODELS
 from animaldet.experiments.rfdetr.trainer import RFDETRTrainer
 from animaldet.experiments.rfdetr.adapters.config import RFDETRExperimentConfig
-from animaldet.experiments.rfdetr.adapters.model import build_model
 from animaldet.experiments.rfdetr.adapters.dataset import build_dataloaders
 from animaldet.experiments.rfdetr.adapters.trainer import (
     build_optimizer,
@@ -22,6 +21,9 @@ from animaldet.experiments.rfdetr.adapters.trainer import (
     prepare_training_args,
 )
 from animaldet.engine.hooks_builder import build_hooks_from_config, register_integration_hooks
+
+# Import to register RFDETR model
+from animaldet.experiments.rfdetr.adapters import model  # noqa: F401
 
 
 @TRAINER_BUILDERS.register("RFDETRTrainer")
@@ -46,8 +48,8 @@ def build_rfdetr_trainer(cfg: Dict[str, Any]) -> RFDETRTrainer:
     rfdetr_cfg = OmegaConf.structured(RFDETRExperimentConfig)
     rfdetr_cfg = OmegaConf.merge(rfdetr_cfg, cfg)
 
-    # Build model
-    model = build_model(rfdetr_cfg.model)
+    # Build model using registry
+    model = MODELS.build("RFDETR", rfdetr_cfg.model)
     device = torch.device(rfdetr_cfg.model.device)
     model = model.to(device)
 

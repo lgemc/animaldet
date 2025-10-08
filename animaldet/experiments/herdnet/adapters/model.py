@@ -6,6 +6,7 @@ from animaloc.train.losses import FocalLoss
 from torch.nn import CrossEntropyLoss
 
 from .config import ModelConfig
+from animaldet.engine.registry import MODELS
 
 
 def build_model(cfg: ModelConfig, device: str = "cuda") -> LossWrapper:
@@ -59,3 +60,16 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> LossWrapper:
     model = LossWrapper(model, losses=losses)
 
     return model
+
+
+@MODELS.register("HerdNet")
+def build_herdnet_model(cfg):
+    """Registered HerdNet model builder for generic trainer.
+
+    Args:
+        cfg: Model configuration (should have structure of ModelConfig)
+
+    Returns:
+        HerdNet model wrapped with losses
+    """
+    return build_model(cfg)

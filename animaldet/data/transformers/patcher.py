@@ -130,6 +130,8 @@ class PatchesBuffer:
         patch_size: Size of patches as (height, width)
         overlap: Overlap between patches in pixels
         min_visibility: Minimum fraction of annotation area visible in patch
+        min_area_ratio: Minimum ratio of cropped area to original bbox area (0.0-1.0)
+                       Filters out annotations that are cropped too small
     """
 
     def __init__(
@@ -139,12 +141,14 @@ class PatchesBuffer:
         patch_size: Tuple[int, int],
         overlap: int = 0,
         min_visibility: float = 0.1,
+        min_area_ratio: float = 0.0,
     ):
         self.csv_path = csv_path
         self.images_root = images_root
         self.patch_height, self.patch_width = patch_size
         self.overlap = overlap
         self.min_visibility = min_visibility
+        self.min_area_ratio = min_area_ratio
 
         self._buffer = None
 
@@ -165,9 +169,19 @@ class PatchesBuffer:
         # Read annotations
         df = pd.read_csv(self.csv_path)
 
-        # Expected columns: images, x, y, labels (optional)
-        if 'images' not in df.columns or 'x' not in df.columns or 'y' not in df.columns:
-            raise ValueError("CSV must contain 'images', 'x', and 'y' columns")
+        # Detect annotation format
+        has_bbox_format = all(col in df.columns for col in ['x_min', 'y_min', 'x_max', 'y_max'])
+        has_point_format = 'x' in df.columns and 'y' in df.columns
+
+        if not has_bbox_format and not has_point_format:
+            raise ValueError(
+                "CSV must contain either:\n"
+                "  - Point format: 'images', 'x', 'y' columns, or\n"
+                "  - Bbox format: 'images', 'x_min', 'y_min', 'x_max', 'y_max' columns"
+            )
+
+        if 'images' not in df.columns:
+            raise ValueError("CSV must contain 'images' column")
 
         has_labels = 'labels' in df.columns
 
@@ -201,29 +215,78 @@ class PatchesBuffer:
 
                     # Check which annotations fall in this patch
                     for _, row in img_df.iterrows():
-                        ann_x, ann_y = row['x'], row['y']
+                        if has_bbox_format:
+                            # Bounding box format - convert to center point and check intersection
+                            ann_x_min, ann_y_min = row['x_min'], row['y_min']
+                            ann_x_max, ann_y_max = row['x_max'], row['y_max']
+                            ann_x = (ann_x_min + ann_x_max) / 2
+                            ann_y = (ann_y_min + ann_y_max) / 2
+
+                            # Calculate intersection area for visibility check
+                            ann_bbox = BBox(ann_x_min, ann_y_min, ann_x_max, ann_y_max)
+                            intersect_x_min = max(ann_x_min, x)
+                            intersect_y_min = max(ann_y_min, y)
+                            intersect_x_max = min(ann_x_max, x_end)
+                            intersect_y_max = min(ann_y_max, y_end)
+
+                            # Check if there's any intersection
+                            if intersect_x_min >= intersect_x_max or intersect_y_min >= intersect_y_max:
+                                continue
+
+                            # Calculate visibility ratio
+                            intersect_area = (intersect_x_max - intersect_x_min) * (intersect_y_max - intersect_y_min)
+                            ann_area = ann_bbox.area()
+                            visibility = intersect_area / ann_area if ann_area > 0 else 0
+
+                            if visibility < self.min_visibility:
+                                continue
+
+                            # Calculate relative bbox coordinates within patch
+                            rel_x_min = max(0, ann_x_min - x)
+                            rel_y_min = max(0, ann_y_min - y)
+                            rel_x_max = min(self.patch_width, ann_x_max - x)
+                            rel_y_max = min(self.patch_height, ann_y_max - y)
+
+                            # Filter by minimum area ratio (cropped area vs original area)
+                            cropped_area = (rel_x_max - rel_x_min) * (rel_y_max - rel_y_min)
+                            area_ratio = cropped_area / ann_area if ann_area > 0 else 0
+                            if area_ratio < self.min_area_ratio:
+                                continue
+                        else:
+                            # Point format
+                            ann_x, ann_y = row['x'], row['y']
+
+                            # Check if annotation is within patch
+                            if not (x <= ann_x < x_end and y <= ann_y < y_end):
+                                continue
+
                         label = row['labels'] if has_labels else None
 
-                        # Check if annotation is within patch
-                        if x <= ann_x < x_end and y <= ann_y < y_end:
-                            # Calculate relative coordinates within patch
-                            rel_x = ann_x - x
-                            rel_y = ann_y - y
+                        # Calculate relative coordinates within patch
+                        rel_x = ann_x - x
+                        rel_y = ann_y - y
 
-                            patch_name = f"{Path(img_name).stem}_patch_{patch_idx:04d}{Path(img_name).suffix}"
+                        patch_name = f"{Path(img_name).stem}_patch_{patch_idx:04d}{Path(img_name).suffix}"
 
-                            patch_data = {
-                                'images': patch_name,
-                                'base_images': img_name,
-                                'x': rel_x,
-                                'y': rel_y,
-                                'limits': patch_bbox,
-                            }
+                        patch_data = {
+                            'images': patch_name,
+                            'base_images': img_name,
+                            'x': rel_x,
+                            'y': rel_y,
+                            'limits': patch_bbox,
+                        }
 
-                            if has_labels:
-                                patch_data['labels'] = label
+                        if has_bbox_format:
+                            # Also store bbox coordinates for bbox format
+                            patch_data['x_min'] = rel_x_min
+                            patch_data['y_min'] = rel_y_min
+                            patch_data['x_max'] = rel_x_max
+                            patch_data['y_max'] = rel_y_max
 
-                            patches_data.append(patch_data)
+                        if has_labels:
+                            patch_data['labels'] = label
+
+                        patches_data.append(patch_data)
 
                     patch_idx += 1
 
@@ -289,6 +352,7 @@ def extract_patches(
     overlap: int = 0,
     csv_path: Optional[str] = None,
     min_visibility: float = 0.1,
+    min_area_ratio: float = 0.0,
     save_all: bool = False,
 ) -> None:
     """
@@ -301,6 +365,7 @@ def extract_patches(
         overlap: Overlap between patches in pixels
         csv_path: Optional path to CSV with annotations
         min_visibility: Minimum visibility threshold for annotations
+        min_area_ratio: Minimum ratio of cropped area to original bbox area
         save_all: If True, save all patches; if False, only annotated ones
     """
     os.makedirs(dest_dir, exist_ok=True)
@@ -316,7 +381,7 @@ def extract_patches(
     if csv_path is not None:
         # Create patches buffer with annotations
         patches_buffer = PatchesBuffer(
-            csv_path, images_root, patch_size, overlap, min_visibility
+            csv_path, images_root, patch_size, overlap, min_visibility, min_area_ratio
         ).buffer
 
         # Save updated annotations
