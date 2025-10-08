@@ -19,6 +19,7 @@ from omegaconf import OmegaConf
 
 from animaldet.engine.registry import TRAINERS
 from animaldet.experiments.herdnet.builder import build_herdnet_trainer
+from animaldet.experiments.rfdetr.builder import build_rfdetr_trainer
 
 
 def parse_args() -> argparse.Namespace:
@@ -145,6 +146,7 @@ def build_trainer_from_config(cfg: Dict[str, Any], trainer_name: str = None) -> 
     # Map trainer names to their builder functions
     builder_map = {
         "HerdNetTrainer": build_herdnet_trainer,
+        "RFDETRTrainer": build_rfdetr_trainer,
     }
 
     if name not in builder_map:
@@ -181,7 +183,7 @@ def main():
 
     # Setup logging
     log_level = logging.DEBUG if args.debug else logging.INFO
-    work_dir = Path(cfg.get("trainer", {}).get("work_dir", "./output"))
+    work_dir = Path(cfg.get("trainer", {}).get("work_dir", "./outputs/base_logger"))
     work_dir.mkdir(parents=True, exist_ok=True)
 
     logging.basicConfig(

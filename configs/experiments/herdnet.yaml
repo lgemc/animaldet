@@ -1,6 +1,14 @@
 # HerdNet Experiment Configuration
 # Based on demo-training-testing-herdnet.ipynb
 
+# Experiment metadata
+experiment:
+  name: herdnet_baseline
+  tags:
+    - herdnet
+    - aerial
+    - baseline
+
 # Random seed for reproducibility
 seed: 9292
 
@@ -65,3 +73,15 @@ evaluator:
   metrics_radius: 20  # Radius for PointsMetrics
   stitcher_overlap: 160  # Overlap for image stitching
   stitcher_reduction: mean  # Reduction method: 'mean', 'max', etc.
+
+# Integrations configuration
+integrations:
+  wandb:
+    enabled: false
+    name: ${experiment.name}
+    tags: ${experiment.tags}
+    project: animaldet
+    notes: HerdNet baseline experiment for animal detection in aerial imagery
+  tensorboard:
+    enabled: false
+    log_dir: tensorboard/${experiment.name}

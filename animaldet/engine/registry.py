@@ -5,7 +5,10 @@ This module provides global registries for trainers and other engine components.
 
 from animaldet.utils.registry import Registry
 
-# Global registry for trainers
-TRAINERS = Registry("trainers")
+# Global registry for trainer builder functions
+TRAINER_BUILDERS = Registry("trainer_builders")
 
-__all__ = ["TRAINERS"]
+# Global registry for hooks (loggers, callbacks, etc.)
+HOOKS = Registry("hooks")
+
+__all__ = ["TRAINER_BUILDERS", "HOOKS"]

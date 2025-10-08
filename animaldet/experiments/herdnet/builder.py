@@ -11,6 +11,7 @@ from omegaconf import OmegaConf
 from animaloc.train import Trainer as AnimalocTrainer
 from torch.optim import Adam
 
+from animaldet.engine.registry import TRAINER_BUILDERS
 from animaldet.experiments.herdnet.trainer import HerdNetTrainer
 from animaldet.experiments.herdnet.adapters.dataset import build_train_dataset, build_val_dataset
 from animaldet.experiments.herdnet.adapters.model import build_model
@@ -18,6 +19,7 @@ from animaldet.experiments.herdnet.adapters.evaluator import build_evaluator
 from animaldet.experiments.herdnet.adapters.config import HerdNetExperimentConfig
 
 
+@TRAINER_BUILDERS.register("HerdNetTrainer")
 def build_herdnet_trainer(cfg: Dict[str, Any]) -> HerdNetTrainer:
     """Build HerdNetTrainer from configuration.
 
