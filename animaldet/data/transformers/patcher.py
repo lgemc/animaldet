@@ -409,7 +409,7 @@ def extract_patches(
             # Save only annotated patches
             padder = PadIfNeeded(
                 patch_size[0], patch_size[1],
-                position=PadIfNeeded.PositionType.TOP_LEFT,
+                position='top_left',
                 border_mode=cv2.BORDER_CONSTANT,
                 value=0
             )
