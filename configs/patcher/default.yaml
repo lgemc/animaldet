@@ -1,0 +1,20 @@
+# Patcher Configuration
+# Extract patches from large images with optional annotations
+
+# Input/Output paths
+images_root: ${oc.env:DATA_DIR,./data}/images
+dest_dir: ${oc.env:DATA_DIR,./data}/patches
+
+# Patch parameters
+patch_size: 512  # Height and width of patches in pixels
+overlap: 0       # Overlap between patches in pixels
+
+# Optional annotation handling
+csv_path: null           # Path to CSV with annotations (images, x, y, labels)
+min_visibility: 0.1      # Minimum fraction of annotation area to keep
+save_all: false          # If false, only save patches with annotations
+
+# Example usage:
+# python tools/patcher.py
+# python tools/patcher.py images_root=/path/to/images patch_size=512 overlap=64
+# python tools/patcher.py csv_path=/path/to/annotations.csv save_all=false

@@ -1,0 +1,28 @@
+[project]
+name = "animaldet"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "albumentations>=2.0.8",
+    "hydra-core>=1.3.2",
+    "omegaconf>=2.3.0",
+    "pandas>=2.3.3",
+    "torch>=2.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "albumentations>=2.0.8",
+    "animaloc",
+    "matplotlib>=3.10.6",
+    "pillow>=11.3.0",
+    "scikit-learn>=1.7.2",
+    "torchvision>=0.23.0",
+    "tqdm>=4.67.1",
+    "wandb>=0.22.2",
+]
+
+[tool.uv.sources]
+animaloc = { git = "https://github.com/Alexandre-Delplanque/HerdNet/" }

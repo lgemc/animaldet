@@ -1,0 +1,67 @@
+# HerdNet Experiment Configuration
+# Based on demo-training-testing-herdnet.ipynb
+
+# Random seed for reproducibility
+seed: 9292
+
+# Model configuration
+model:
+  num_classes: 7 # 6 animal classes + 1 background
+  down_ratio: 2
+  losses:
+    - name: focal_loss
+      idx: 0
+      idy: 0
+      lambda_: 1.0
+      weight: null
+    - name: ce_loss
+      idx: 1
+      idy: 1
+      lambda_: 1.0
+      weight: [0.1, 1.0, 2.0, 1.0, 6.0, 12.0, 1.0]
+
+# Dataset configuration
+data:
+  patch_size: 512
+
+  # Update these paths to your actual data locations
+  train_csv: ${oc.env:DATA_DIR,./data}/herdnet/train_patches.csv
+  train_root: ${oc.env:DATA_DIR,./data}/herdnet/train_patches
+  val_csv: ${oc.env:DATA_DIR,./data}/herdnet/val_patches/gt.csv
+  val_root: ${oc.env:DATA_DIR,./data}/herdnet/val_patches
+  test_csv: ${oc.env:DATA_DIR,./data}/herdnet/test_patches/gt.csv
+  test_root: ${oc.env:DATA_DIR,./data}/herdnet/test_patches
+
+  # Augmentation probabilities
+  vertical_flip: 0.5
+  horizontal_flip: 0.5
+  rotate90: 0.5
+  brightness_contrast: 0.2
+  blur: 0.2
+
+  # Transform parameters
+  radius: 2  # For PointsToMask
+  mask_down_ratio: 32  # patch_size // 16 = 512 // 16
+
+# Optimizer configuration
+optimizer:
+  name: adam
+  lr: 1.0e-4
+  weight_decay: 1.0e-3
+
+# Training configuration
+trainer:
+  name: HerdNetTrainer  # Trainer registry name
+  num_epochs: 100
+  batch_size: 4
+  warmup_iters: 100
+  checkpoints: best  # Options: 'best', 'all', 'last'
+  select: max  # Options: 'max', 'min'
+  validate_on: f1_score
+  work_dir: ./output
+
+# Evaluation configuration
+evaluator:
+  metrics_radius: 20  # Radius for PointsMetrics
+  stitcher_overlap: 160  # Overlap for image stitching
+  stitcher_reduction: mean  # Reduction method: 'mean', 'max', etc.
