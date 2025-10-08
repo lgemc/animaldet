@@ -21,8 +21,7 @@ from animaldet.experiments.rfdetr.adapters.trainer import (
     build_criterion_and_postprocessors,
     prepare_training_args,
 )
-from animaldet.utils.integrations.wandb import WandbLogger
-from animaldet.utils.integrations.tensorboard import TensorBoardLogger
+from animaldet.engine.hooks_builder import build_hooks_from_config, register_integration_hooks
 
 
 @TRAINER_BUILDERS.register("RFDETRTrainer")
@@ -96,33 +95,11 @@ def build_rfdetr_trainer(cfg: Dict[str, Any]) -> RFDETRTrainer:
     work_dir = Path(rfdetr_cfg.trainer.work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build hooks (if integrations are configured)
-    hooks = []
-    if hasattr(rfdetr_cfg, 'integrations') and rfdetr_cfg.integrations:
-        if (hasattr(rfdetr_cfg.integrations, 'wandb') and
-            rfdetr_cfg.integrations.wandb.get('enabled', False)):
-            wandb_hook = WandbLogger(
-                project=rfdetr_cfg.integrations.wandb.get('project', 'animaldet'),
-                name=rfdetr_cfg.integrations.wandb.get('name', 'rfdetr_experiment'),
-                tags=rfdetr_cfg.integrations.wandb.get('tags', []),
-            )
-            hooks.append(wandb_hook)
+    # Register integration hooks
+    register_integration_hooks()
 
-        if (hasattr(rfdetr_cfg.integrations, 'tensorboard') and
-            rfdetr_cfg.integrations.tensorboard.get('enabled', False)):
-            tensorboard_hook = TensorBoardLogger(
-                enabled=True,
-                log_dir=rfdetr_cfg.integrations.tensorboard.get('log_dir', 'tensorboard'),
-                log_interval=rfdetr_cfg.integrations.tensorboard.get('log_interval', 10),
-                flush_secs=rfdetr_cfg.integrations.tensorboard.get('flush_secs', 120),
-                log_histograms=rfdetr_cfg.integrations.tensorboard.get('log_histograms', False),
-                log_graph=rfdetr_cfg.integrations.tensorboard.get('log_graph', False),
-                log_gradients=rfdetr_cfg.integrations.tensorboard.get('log_gradients', False),
-                log_lr=rfdetr_cfg.integrations.tensorboard.get('log_lr', True),
-                log_images=rfdetr_cfg.integrations.tensorboard.get('log_images', False),
-                max_images=rfdetr_cfg.integrations.tensorboard.get('max_images', 8),
-            )
-            hooks.append(tensorboard_hook)
+    # Build hooks from integration configs
+    hooks = build_hooks_from_config(cfg)
 
     # Create and return RFDETRTrainer
     return RFDETRTrainer(

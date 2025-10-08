@@ -124,7 +124,7 @@ trainer:
 
   # Logging
   tensorboard: true
-  wandb: false
+  wandb: true
   project: animaldet
   run: ${experiment.name}
 
