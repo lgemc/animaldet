@@ -1,8 +1,9 @@
 """Engine module for training and evaluation."""
 
-from animaldet.engine.registry import TRAINER_BUILDERS, HOOKS
+from animaldet.engine.registry import TRAINER_BUILDERS, INFERENCE_BUILDERS, HOOKS
 from animaldet.engine.loggers import ConsoleLogger
 from animaldet.engine.metric_hooks import F1MetricHook
+from animaldet.engine.inference import BaseInference
 
 # Import integrations to trigger their registration decorators
 # TensorBoardLogger and WandbLogger will auto-register via @HOOKS.register()
@@ -14,7 +15,9 @@ HOOKS.register("f1_metric")(F1MetricHook)
 
 __all__ = [
     "TRAINER_BUILDERS",
+    "INFERENCE_BUILDERS",
     "HOOKS",
+    "BaseInference",
     "ConsoleLogger",
     "TensorBoardLogger",
     "WandbLogger",

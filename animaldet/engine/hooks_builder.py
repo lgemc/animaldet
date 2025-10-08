@@ -67,8 +67,8 @@ def build_hooks_from_config(
                     # Get hook class from registry
                     hook_class = HOOKS[hook_name]
 
-                    # Remove 'enabled' from config before passing to constructor
-                    init_kwargs = {k: v for k, v in hook_cfg.items() if k != "enabled"}
+                    # Pass full config to constructor (including 'enabled')
+                    init_kwargs = hook_cfg.copy()
 
                     # Instantiate hook
                     hook = hook_class(**init_kwargs)
