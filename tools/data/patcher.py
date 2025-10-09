@@ -42,6 +42,9 @@ def main(cfg: DictConfig) -> None:
     min_visibility = cfg.get("min_visibility", 0.1)
     min_area_ratio = cfg.get("min_area_ratio", 0.0)
     save_all = cfg.get("save_all", False)
+    column_mapping = cfg.get("column_mapping", None)
+    if column_mapping is not None:
+        column_mapping = dict(column_mapping)  # Convert OmegaConf to dict
 
     # Validate paths
     if not Path(images_root).exists():
@@ -65,6 +68,7 @@ def main(cfg: DictConfig) -> None:
         min_visibility=min_visibility,
         min_area_ratio=min_area_ratio,
         save_all=save_all,
+        column_mapping=column_mapping,
     )
 
     print(f"\n✓ Patches extracted successfully to: {dest_dir}")

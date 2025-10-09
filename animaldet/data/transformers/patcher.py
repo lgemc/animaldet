@@ -132,6 +132,9 @@ class PatchesBuffer:
         min_visibility: Minimum fraction of annotation area visible in patch
         min_area_ratio: Minimum ratio of cropped area to original bbox area (0.0-1.0)
                        Filters out annotations that are cropped too small
+        column_mapping: Optional dict to map CSV columns to standard format
+                       Example: {'Image': 'images', 'x1': 'x_min', 'y1': 'y_min',
+                                'x2': 'x_max', 'y2': 'y_max', 'Label': 'labels'}
     """
 
     def __init__(
@@ -142,6 +145,7 @@ class PatchesBuffer:
         overlap: int = 0,
         min_visibility: float = 0.1,
         min_area_ratio: float = 0.0,
+        column_mapping: Optional[dict] = None,
     ):
         self.csv_path = csv_path
         self.images_root = images_root
@@ -149,6 +153,7 @@ class PatchesBuffer:
         self.overlap = overlap
         self.min_visibility = min_visibility
         self.min_area_ratio = min_area_ratio
+        self.column_mapping = column_mapping
 
         self._buffer = None
 
@@ -168,6 +173,12 @@ class PatchesBuffer:
         """Create the patches buffer from annotations."""
         # Read annotations
         df = pd.read_csv(self.csv_path)
+
+        # Normalize column names to standard format if mapping is provided
+        if self.column_mapping is not None:
+            # Only apply mappings for columns that actually exist in the dataframe
+            existing_mappings = {k: v for k, v in self.column_mapping.items() if k in df.columns}
+            df = df.rename(columns=existing_mappings)
 
         # Detect annotation format
         has_bbox_format = all(col in df.columns for col in ['x_min', 'y_min', 'x_max', 'y_max'])
@@ -354,6 +365,7 @@ def extract_patches(
     min_visibility: float = 0.1,
     min_area_ratio: float = 0.0,
     save_all: bool = False,
+    column_mapping: Optional[dict] = None,
 ) -> None:
     """
     Extract patches from images in a directory.
@@ -367,6 +379,7 @@ def extract_patches(
         min_visibility: Minimum visibility threshold for annotations
         min_area_ratio: Minimum ratio of cropped area to original bbox area
         save_all: If True, save all patches; if False, only annotated ones
+        column_mapping: Optional dict to map CSV columns to standard format
     """
     os.makedirs(dest_dir, exist_ok=True)
 
@@ -381,7 +394,7 @@ def extract_patches(
     if csv_path is not None:
         # Create patches buffer with annotations
         patches_buffer = PatchesBuffer(
-            csv_path, images_root, patch_size, overlap, min_visibility, min_area_ratio
+            csv_path, images_root, patch_size, overlap, min_visibility, min_area_ratio, column_mapping
         ).buffer
 
         # Save updated annotations
