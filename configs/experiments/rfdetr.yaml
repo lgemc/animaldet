@@ -113,7 +113,7 @@ trainer:
   lr_drop: 100  # Epoch to drop LR (step decay)
 
   # Checkpointing
-  checkpoint_interval: 10  # Save checkpoint every N epochs
+  checkpoint_interval: 1  # Save checkpoint every N epochs
   work_dir: ./output/rfdetr
 
   # Early stopping

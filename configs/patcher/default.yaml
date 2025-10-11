@@ -18,6 +18,19 @@ min_area_ratio: 0.0      # Minimum ratio of cropped bbox area to original bbox a
                          # Filters out bboxes that are cropped too small (e.g., 0.5 = keep only if >50% visible)
 save_all: false          # If false, only save patches with annotations
 
+# Column mapping (optional)
+# Use this to map CSV columns to standard format (images, x_min, y_min, x_max, y_max, labels)
+# If null, CSV is expected to already use standard column names
+column_mapping: null
+# Example for alternative format (Image, x1, y1, x2, y2, Label):
+# column_mapping:
+#   Image: images
+#   x1: x_min
+#   y1: y_min
+#   x2: x_max
+#   y2: y_max
+#   Label: labels
+
 # Example usage:
 # python tools/patcher.py
 # python tools/patcher.py images_root=/path/to/images patch_size=512 overlap=64

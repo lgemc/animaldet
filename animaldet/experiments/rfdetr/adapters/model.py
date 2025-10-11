@@ -75,6 +75,12 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> torch.nn.Module:
     # Create model instance (this is a wrapper: RFDETR class)
     rfdetr_wrapper = model_class(**model_kwargs)
 
+    # Reinitialize detection head with correct number of classes
+    # The RF-DETR wrapper may have loaded pretrained weights with different num_classes
+    # We need to ensure the head matches our dataset's num_classes
+    print(f"Restarting number of classes to {cfg.num_classes}")
+    rfdetr_wrapper.model.reinitialize_detection_head(cfg.num_classes+1)  # +1 for background class
+
     # Extract the actual PyTorch model from the nested wrappers
     # rfdetr_wrapper.model is a Model instance
     # rfdetr_wrapper.model.model is the actual PyTorch LWDETR module
