@@ -38,33 +38,35 @@ def convert_ungulate_to_coco(
         preserve_species: If True, preserve individual species as categories.
                          If False, collapse all to single "ungulate" class.
     """
-    # Define species mapping (label_id -> name)
-    # Based on ungulate dataset: 0=buffalo, 1=gazelle, 2=other, 3=wbuck, 4=zebra
-    SPECIES_MAPPING = {
-        0: "buffalo",
-        1: "gazelle",
-        2: "other",
-        3: "wbuck",
-        4: "zebra"
-    }
+    # First pass: collect all unique labels from the data
+    unique_labels = set()
+    with open(gt_csv, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            unique_labels.add(int(row['labels']))
+
+    # Create species mapping: original label -> 0-indexed category
+    # Sort to ensure consistent ordering
+    sorted_labels = sorted(unique_labels)
+    label_to_category = {label: idx for idx, label in enumerate(sorted_labels)}
 
     # Initialize COCO structure with categories
     if preserve_species:
         # Create separate category for each species
-        # COCO category IDs should start from 1, so we add 1 to label IDs
+        # COCO category IDs are 0-indexed
         categories = [
             {
-                "id": label_id + 1,  # COCO IDs start from 1
-                "name": species_name,
+                "id": category_id,
+                "name": f"species_{original_label}",
                 "supercategory": "ungulate"
             }
-            for label_id, species_name in sorted(SPECIES_MAPPING.items())
+            for original_label, category_id in sorted(label_to_category.items(), key=lambda x: x[1])
         ]
     else:
         # Single "ungulate" category
         categories = [
             {
-                "id": 1,
+                "id": 0,
                 "name": "ungulate",
                 "supercategory": "animal"
             }
@@ -101,11 +103,11 @@ def convert_ungulate_to_coco(
 
             # Map label to category_id
             if preserve_species:
-                # Use species-specific category (label + 1 since COCO IDs start from 1)
-                cat_id = label + 1
+                # Use species-specific category (0-indexed)
+                cat_id = label_to_category[label]
             else:
                 # Use single "ungulate" category
-                cat_id = 1
+                cat_id = 0
 
             # Create annotation
             annotation = {

@@ -1,0 +1,10 @@
+# HerdNet train dataset visualization config
+# Big size is used for original dataset extracted with bounding boxes of size 560x560
+# in order to make them available to use at rf-detr
+dataset_type: herdnet
+csv_path: data/herdnet/train_patches_big_size/gt.csv
+images_dir: data/herdnet/train_patches_big_size
+name: herdnet_train
+persistent: false
+point_radius: 10
+database_uri: mongodb://localhost:27017

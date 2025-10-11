@@ -18,4 +18,4 @@ csv_path: ${oc.env:DATA_DIR,./data}/ungulate/annotations-clean-name-pruned/test.
 # Annotation handling
 min_visibility: 0.3  # Higher threshold for bbox annotations
 min_area_ratio: 0.5  # Keep only bboxes with at least 50% of original area visible
-save_all: false  # Only save patches with annotations
+save_all: true  # Only save patches with annotations

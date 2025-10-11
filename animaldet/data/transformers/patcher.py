@@ -405,6 +405,8 @@ def extract_patches(
         if not save_all:
             # Only process images with annotations
             df = pd.read_csv(csv_path)
+            if column_mapping:
+                df = df.rename(columns=column_mapping)
             image_paths = [
                 os.path.join(images_root, x)
                 for x in df['images'].unique()
