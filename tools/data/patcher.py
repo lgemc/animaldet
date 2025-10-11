@@ -15,8 +15,6 @@ def patcher_main(
     patch_size: Optional[int],
     overlap: int,
     csv_path: Optional[str],
-    min_visibility: float,
-    min_area_ratio: float,
     save_all: bool,
 ):
     """Main patcher function.
@@ -28,8 +26,6 @@ def patcher_main(
         patch_size: Size of patches to extract
         overlap: Overlap between patches in pixels
         csv_path: Path to CSV file with annotations
-        min_visibility: Minimum visibility threshold
-        min_area_ratio: Minimum area ratio
         save_all: Save all patches including those without annotations
     """
     # Load config if provided
@@ -52,9 +48,8 @@ def patcher_main(
         patch_size_tuple = (cfg.patch_size, cfg.patch_size)
         overlap = cfg.get("overlap", overlap)
         csv_path = cfg.get("csv_path", None)
-        min_visibility = cfg.get("min_visibility", min_visibility)
-        min_area_ratio = cfg.get("min_area_ratio", min_area_ratio)
         save_all = cfg.get("save_all", save_all)
+        column_mapping = cfg.get("column_mapping", None)
     else:
         # Use CLI arguments only
         if not images_root or not dest_dir or not patch_size:
@@ -62,6 +57,7 @@ def patcher_main(
                 "--images-root, --dest-dir, and --patch-size are required when --config is not provided"
             )
         patch_size_tuple = (patch_size, patch_size)
+        column_mapping = None
 
     print("=" * 80)
     print("Patcher Configuration:")
@@ -71,8 +67,6 @@ def patcher_main(
     print(f"patch_size: {patch_size_tuple}")
     print(f"overlap: {overlap}")
     print(f"csv_path: {csv_path}")
-    print(f"min_visibility: {min_visibility}")
-    print(f"min_area_ratio: {min_area_ratio}")
     print(f"save_all: {save_all}")
     print("=" * 80)
 
@@ -95,9 +89,8 @@ def patcher_main(
         patch_size=patch_size_tuple,
         overlap=overlap,
         csv_path=csv_path,
-        min_visibility=min_visibility,
-        min_area_ratio=min_area_ratio,
         save_all=save_all,
+        column_mapping=column_mapping,
     )
 
     print(f"\n✓ Patches extracted successfully to: {dest_dir}")

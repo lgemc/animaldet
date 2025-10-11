@@ -56,8 +56,6 @@ def patcher(
     patch_size: Annotated[int, typer.Option("--patch-size", help="Size of patches to extract")] = None,
     overlap: Annotated[int, typer.Option("--overlap", help="Overlap between patches in pixels")] = 0,
     csv_path: Annotated[str, typer.Option("--csv-path", help="Path to CSV file with annotations")] = None,
-    min_visibility: Annotated[float, typer.Option("--min-visibility", help="Minimum visibility threshold")] = 0.1,
-    min_area_ratio: Annotated[float, typer.Option("--min-area-ratio", help="Minimum area ratio")] = 0.0,
     save_all: Annotated[bool, typer.Option("--save-all", help="Save all patches including those without annotations")] = False,
 ):
     """Extract patches from images using configuration or CLI arguments."""
@@ -70,8 +68,6 @@ def patcher(
         patch_size=patch_size,
         overlap=overlap,
         csv_path=csv_path,
-        min_visibility=min_visibility,
-        min_area_ratio=min_area_ratio,
         save_all=save_all,
     )
 

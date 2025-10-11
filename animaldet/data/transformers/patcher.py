@@ -122,16 +122,13 @@ class PatchesBuffer:
     Buffer for managing patches with annotations.
 
     This class processes annotations and determines which patches contain
-    annotations based on minimum visibility threshold.
+    annotations.
 
     Args:
         csv_path: Path to CSV file with annotations
         images_root: Root directory containing images
         patch_size: Size of patches as (height, width)
         overlap: Overlap between patches in pixels
-        min_visibility: Minimum fraction of annotation area visible in patch
-        min_area_ratio: Minimum ratio of cropped area to original bbox area (0.0-1.0)
-                       Filters out annotations that are cropped too small
         column_mapping: Optional dict to map CSV columns to standard format
                        Example: {'Image': 'images', 'x1': 'x_min', 'y1': 'y_min',
                                 'x2': 'x_max', 'y2': 'y_max', 'Label': 'labels'}
@@ -143,16 +140,12 @@ class PatchesBuffer:
         images_root: str,
         patch_size: Tuple[int, int],
         overlap: int = 0,
-        min_visibility: float = 0.1,
-        min_area_ratio: float = 0.0,
         column_mapping: Optional[dict] = None,
     ):
         self.csv_path = csv_path
         self.images_root = images_root
         self.patch_height, self.patch_width = patch_size
         self.overlap = overlap
-        self.min_visibility = min_visibility
-        self.min_area_ratio = min_area_ratio
         self.column_mapping = column_mapping
 
         self._buffer = None
@@ -244,25 +237,11 @@ class PatchesBuffer:
                             if intersect_x_min >= intersect_x_max or intersect_y_min >= intersect_y_max:
                                 continue
 
-                            # Calculate visibility ratio
-                            intersect_area = (intersect_x_max - intersect_x_min) * (intersect_y_max - intersect_y_min)
-                            ann_area = ann_bbox.area()
-                            visibility = intersect_area / ann_area if ann_area > 0 else 0
-
-                            if visibility < self.min_visibility:
-                                continue
-
                             # Calculate relative bbox coordinates within patch
                             rel_x_min = max(0, ann_x_min - x)
                             rel_y_min = max(0, ann_y_min - y)
                             rel_x_max = min(self.patch_width, ann_x_max - x)
                             rel_y_max = min(self.patch_height, ann_y_max - y)
-
-                            # Filter by minimum area ratio (cropped area vs original area)
-                            cropped_area = (rel_x_max - rel_x_min) * (rel_y_max - rel_y_min)
-                            area_ratio = cropped_area / ann_area if ann_area > 0 else 0
-                            if area_ratio < self.min_area_ratio:
-                                continue
                         else:
                             # Point format
                             ann_x, ann_y = row['x'], row['y']
@@ -362,8 +341,6 @@ def extract_patches(
     patch_size: Tuple[int, int],
     overlap: int = 0,
     csv_path: Optional[str] = None,
-    min_visibility: float = 0.1,
-    min_area_ratio: float = 0.0,
     save_all: bool = False,
     column_mapping: Optional[dict] = None,
 ) -> None:
@@ -376,8 +353,6 @@ def extract_patches(
         patch_size: Size of patches as (height, width)
         overlap: Overlap between patches in pixels
         csv_path: Optional path to CSV with annotations
-        min_visibility: Minimum visibility threshold for annotations
-        min_area_ratio: Minimum ratio of cropped area to original bbox area
         save_all: If True, save all patches; if False, only annotated ones
         column_mapping: Optional dict to map CSV columns to standard format
     """
@@ -394,7 +369,7 @@ def extract_patches(
     if csv_path is not None:
         # Create patches buffer with annotations
         patches_buffer = PatchesBuffer(
-            csv_path, images_root, patch_size, overlap, min_visibility, min_area_ratio, column_mapping
+            csv_path, images_root, patch_size, overlap, column_mapping
         ).buffer
 
         # Save updated annotations
