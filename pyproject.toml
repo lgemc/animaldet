@@ -19,7 +19,10 @@ dependencies = [
 dev = [
     "albumentations>=2.0.8",
     "animaloc",
+    "dvc>=3.63.0",
+    "dvc-s3>=3.2.2",
     "fiftyone>=1.0.0",
+    "gdown>=5.2.0",
     "matplotlib>=3.10.6",
     "pillow>=11.3.0",
     "scikit-learn>=1.7.2",

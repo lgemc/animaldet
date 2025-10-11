@@ -1,0 +1,7 @@
+dataset_type: herdnet
+csv_path: data/herdnet/processed/delplanque/test.csv
+images_dir: data/herdnet/processed/delplanque/test
+name: herdnet_delplanque_test
+persistent: false
+point_radius: 10
+database_uri: mongodb://localhost:27017

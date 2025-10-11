@@ -1,0 +1,7 @@
+dataset_type: herdnet
+csv_path: data/herdnet/processed/delplanque/val.csv
+images_dir: data/herdnet/processed/delplanque/val
+name: herdnet_delplanque_val
+persistent: false
+point_radius: 10
+database_uri: mongodb://localhost:27017
