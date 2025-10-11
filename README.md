@@ -14,3 +14,11 @@ uv run tools/patcher.py \
     overlap=160 \
     save_all=true
 ```
+
+# Visualizations
+
+We use [fiftyone](https://github.com/voxel51/fiftyone) to visualize the datasets, using the next command:
+
+```bash
+uv run tools/main.py visualize --config configs/visualization/herdnet/raw/train.yaml
+```
