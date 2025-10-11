@@ -141,7 +141,7 @@ evaluator:
   metrics:
     f1_score:
       enabled: true
-      center_threshold: 50.0  # Max distance in pixels for center-based matching
+      center_threshold: 20.0  # Max distance in pixels for center-based matching. Kept in 20, the same amount at herdnet
       score_threshold: 0.5    # Min confidence score for predictions
       verbose: false          # Print detailed debug information
 
