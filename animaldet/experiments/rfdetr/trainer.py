@@ -95,7 +95,7 @@ class RFDETRTrainer:
         self,
         num_epochs: Optional[int] = None,
         max_norm: float = 0.1,
-        checkpoint_interval: int = 10
+        checkpoint_interval: Optional[int] = None
     ) -> torch.nn.Module:
         """
         Fit the model (PyTorch Lightning-style).
@@ -103,13 +103,16 @@ class RFDETRTrainer:
         Args:
             num_epochs: Number of epochs to train (uses args.epochs if None)
             max_norm: Gradient clipping max norm
-            checkpoint_interval: Save checkpoint every N epochs
+            checkpoint_interval: Save checkpoint every N epochs (uses args.checkpoint_interval if None)
 
         Returns:
             Trained model
         """
         if num_epochs is None:
             num_epochs = self.args.epochs if self.args else 100
+
+        if checkpoint_interval is None:
+            checkpoint_interval = self.args.checkpoint_interval if self.args and hasattr(self.args, 'checkpoint_interval') else 10
 
         # Call before_train hooks
         self.hook_manager.before_train(self)
