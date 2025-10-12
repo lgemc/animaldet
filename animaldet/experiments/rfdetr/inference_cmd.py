@@ -210,98 +210,9 @@ def inference_main(
             detections_path, index=False
         )
 
-    # Calculate and save metrics if ground truth is available
-    if 'x_min' in df.columns and 'y_min' in df.columns:
-        logger.info("\\nCalculating metrics...")
-        metrics = calculate_metrics(detections_df, df, cfg.evaluator.metrics_radius)
-
-        # Save metrics
-        results_path = output_path / cfg.inference.results_csv
-        metrics_df = pd.DataFrame([metrics])
-        metrics_df.to_csv(results_path, index=False)
-
-        logger.info(f"\\n{'='*60}")
-        logger.info("EVALUATION RESULTS")
-        logger.info(f"{'='*60}")
-        logger.info(f"Precision: {metrics['precision']:.4f}")
-        logger.info(f"Recall: {metrics['recall']:.4f}")
-        logger.info(f"F1-Score: {metrics['f1_score']:.4f}")
-        logger.info(f"{'='*60}")
-        logger.info(f"Results saved to: {results_path}")
+    logger.info(f"\nInference complete. Use animaldet.evaluation.calculate_f1 to compute metrics.")
 
     return detections_df
-
-
-def calculate_metrics(
-    detections_df: pd.DataFrame,
-    ground_truth_df: pd.DataFrame,
-    radius: float = 20.0
-) -> dict:
-    """Calculate detection metrics.
-
-    Args:
-        detections_df: DataFrame with detections (images, x, y, labels, scores)
-        ground_truth_df: DataFrame with ground truth (images, x_min, y_min, x_max, y_max, labels)
-        radius: Matching radius for point-based metrics
-
-    Returns:
-        Dictionary with precision, recall, and f1_score
-    """
-    # Simple point-based matching using box centers
-    true_positives = 0
-    false_positives = 0
-    false_negatives = 0
-
-    # Group by image
-    for img_name in ground_truth_df['images'].unique():
-        # Get detections for this image
-        img_dets = detections_df[detections_df['images'] == img_name]
-        img_gt = ground_truth_df[ground_truth_df['images'] == img_name]
-
-        # Convert boxes to center points for GT
-        gt_centers = np.column_stack([
-            (img_gt['x_min'].values + img_gt['x_max'].values) / 2,
-            (img_gt['y_min'].values + img_gt['y_max'].values) / 2,
-        ])
-
-        det_centers = np.column_stack([
-            (img_dets['x'].values + img_dets['x_max'].values) / 2,
-            (img_dets['y'].values + img_dets['y_max'].values) / 2,
-        ]) if len(img_dets) > 0 else np.empty((0, 2))
-
-        # Match detections to ground truth
-        matched_gt = set()
-        for det_idx, det_center in enumerate(det_centers):
-            # Find closest GT
-            if len(gt_centers) > 0:
-                distances = np.linalg.norm(gt_centers - det_center, axis=1)
-                min_dist_idx = np.argmin(distances)
-                min_dist = distances[min_dist_idx]
-
-                if min_dist <= radius and min_dist_idx not in matched_gt:
-                    true_positives += 1
-                    matched_gt.add(min_dist_idx)
-                else:
-                    false_positives += 1
-            else:
-                false_positives += 1
-
-        # Unmatched GT are false negatives
-        false_negatives += len(gt_centers) - len(matched_gt)
-
-    # Calculate metrics
-    precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0.0
-    recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0.0
-    f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-
-    return {
-        'precision': precision,
-        'recall': recall,
-        'f1_score': f1_score,
-        'true_positives': true_positives,
-        'false_positives': false_positives,
-        'false_negatives': false_negatives,
-    }
 
 
 if __name__ == "__main__":
