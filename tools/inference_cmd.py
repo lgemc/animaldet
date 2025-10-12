@@ -12,6 +12,7 @@ import albumentations as A
 import torch
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -393,7 +394,7 @@ def _inference_rfdetr(
 
     # Run inference on all images
     all_detections = []
-    for img_file in image_files:
+    for img_file in tqdm(image_files, desc="Processing images", unit="img"):
         img_path = Path(cfg.data.test_root) / img_file
 
         if not img_path.exists():
@@ -407,8 +408,6 @@ def _inference_rfdetr(
         # Apply transforms
         transformed = transform(image=image_np)
         image_tensor = transformed['image']  # [C, H, W]
-
-        logger.info(f"Processing {img_file} (size: {image_tensor.shape[1]}x{image_tensor.shape[2]})")
 
         # Run inference with stitcher
         detections = stitcher(image_tensor)
@@ -426,8 +425,6 @@ def _inference_rfdetr(
                     'labels': int(detections['labels'][i]),
                     'scores': float(detections['scores'][i]),
                 })
-
-        logger.info(f"  Found {n_dets} detections")
 
     # Save detections
     detections_df = pd.DataFrame(all_detections)
