@@ -1,0 +1,98 @@
+---
+# Ansible playbook to setup and run animaldet training on remote machine
+# Usage: ansible-playbook -i <host>, -u <user> infra/ansible/remote_train.yml
+# Example: ansible-playbook -i 192.168.1.100, -u ubuntu infra/ansible/remote_train.yml
+
+- name: Setup and run animaldet training
+  hosts: all
+  vars:
+    workspace_dir: /workspace
+    repo_url: https://github.com/lgemc/animaldet
+    config_path: configs/experiments/rfdetr_herdnet_560_all.yaml
+    dvc_data_path: data/herdnet/processed/560_all.dvc
+    aws_profile: i
+    aws_region: us-east-1
+
+  tasks:
+    - name: Step 0 - Create workspace directory
+      ansible.builtin.file:
+        path: "{{ workspace_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Step 0.1 - Check if uv is installed
+      ansible.builtin.stat:
+        path: ~/.local/bin/uv
+      register: uv_binary
+
+    - name: Step 0.1 - Install uv package manager
+      ansible.builtin.shell: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+      args:
+        executable: /bin/bash
+      when: not uv_binary.stat.exists
+
+    - name: Step 0.1 - Add uv to PATH in bashrc
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        line: 'export PATH="$HOME/.local/bin:$PATH"'
+        create: yes
+
+    - name: Step 1 - Clone animaldet repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ workspace_dir }}/animaldet"
+        force: yes
+        version: master
+
+    - name: Step 2 - Install dependencies with uv sync
+      ansible.builtin.shell: |
+        ~/.local/bin/uv sync
+      args:
+        chdir: "{{ workspace_dir }}/animaldet"
+        executable: /bin/bash
+      register: uv_sync_output
+
+    - name: Step 2 - Display uv sync output
+      ansible.builtin.debug:
+        var: uv_sync_output.stdout_lines
+
+    - name: Step 3 - Create .aws directory
+      ansible.builtin.file:
+        path: ~/.aws
+        state: directory
+        mode: '0700'
+
+    - name: Step 3 - Copy AWS credentials
+      ansible.builtin.copy:
+        src: ~/.aws/
+        dest: ~/.aws/
+        mode: '0600'
+
+    - name: Step 4 - Pull data with DVC
+      ansible.builtin.shell: |
+        export AWS_PROFILE={{ aws_profile }}
+        export AWS_DEFAULT_REGION={{ aws_region }}
+        ~/.local/bin/uv run dvc pull {{ dvc_data_path }}
+      args:
+        chdir: "{{ workspace_dir }}/animaldet"
+        executable: /bin/bash
+      register: dvc_pull_output
+
+    - name: Step 4 - Display DVC pull output
+      ansible.builtin.debug:
+        var: dvc_pull_output.stdout_lines
+
+    - name: Run training in background
+      ansible.builtin.shell: |
+        nohup ~/.local/bin/uv run tools/main.py train --config {{ config_path }} > training.log 2>&1 &
+      args:
+        chdir: "{{ workspace_dir }}/animaldet"
+        executable: /bin/bash
+
+    - name: Display completion message
+      ansible.builtin.debug:
+        msg:
+          - "Training started successfully!"
+          - "Check {{ workspace_dir }}/animaldet/training.log for progress"
+          - "To monitor: tail -f {{ workspace_dir }}/animaldet/training.log"
