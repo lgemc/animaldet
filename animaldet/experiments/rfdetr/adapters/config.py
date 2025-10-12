@@ -93,6 +93,11 @@ class DataConfig:
     do_random_resize_via_padding: bool = False
     square_resize_div_64: bool = True
 
+    # Background filtering (for sparse detection datasets)
+    # Set to None to keep all images, or specify ratio like 5.0 for 5:1 background:foreground
+    background_ratio: Optional[float] = None
+    background_filter_seed: int = 42  # Random seed for reproducible filtering
+
     # Class names
     class_names: Optional[list[str]] = None
 

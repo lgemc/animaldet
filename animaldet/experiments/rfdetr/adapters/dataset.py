@@ -1,9 +1,10 @@
 """Dataset builders for RF-DETR experiments."""
 
 import sys
+import random
 from pathlib import Path
-from torch.utils.data import DataLoader
-from typing import Tuple, Optional
+from torch.utils.data import DataLoader, Dataset
+from typing import Tuple, Optional, List
 
 # Add rf-detr to path
 rfdetr_path = Path("/home/lmanrique/Do/rf-detr")
@@ -14,6 +15,82 @@ from rfdetr.datasets import build_dataset
 from rfdetr.util.misc import collate_fn
 
 from .config import DataConfig, ModelConfig
+
+
+class BackgroundFilteredDataset(Dataset):
+    """
+    Wrapper dataset that filters background images to achieve a target ratio.
+
+    For sparse detection tasks with many background patches, this wrapper
+    randomly samples background images to achieve the desired background:foreground ratio.
+
+    Args:
+        base_dataset: The underlying COCO dataset
+        background_ratio: Target ratio of background:foreground images (e.g., 5.0 for 5:1)
+        seed: Random seed for reproducible sampling
+    """
+
+    def __init__(self, base_dataset: Dataset, background_ratio: float, seed: int = 42):
+        self.base_dataset = base_dataset
+        self.background_ratio = background_ratio
+
+        # Get COCO API from base dataset
+        self.coco = base_dataset.coco
+
+        # Identify foreground and background images
+        img_ids_with_annots = set()
+        for ann in self.coco.anns.values():
+            img_ids_with_annots.add(ann['image_id'])
+
+        # IMPORTANT: Use base_dataset.ids to ensure index alignment
+        # The base dataset uses self.ids[idx] for lookups, so we must enumerate over it
+        self.foreground_indices = []
+        self.background_indices = []
+
+        for idx, img_id in enumerate(base_dataset.ids):
+            if img_id in img_ids_with_annots:
+                self.foreground_indices.append(idx)
+            else:
+                self.background_indices.append(idx)
+
+        # Calculate how many background images to keep
+        num_foreground = len(self.foreground_indices)
+        num_background_total = len(self.background_indices)
+        num_background_target = int(num_foreground * background_ratio)
+
+        # Sample background indices
+        rng = random.Random(seed)
+        if num_background_target < num_background_total:
+            self.sampled_background_indices = rng.sample(
+                self.background_indices,
+                num_background_target
+            )
+        else:
+            self.sampled_background_indices = self.background_indices
+
+        # Combine and create final index mapping
+        self.active_indices = sorted(self.foreground_indices + self.sampled_background_indices)
+
+        # Print statistics
+        actual_ratio = len(self.sampled_background_indices) / num_foreground if num_foreground > 0 else 0
+        print(f"\n{'='*60}")
+        print(f"Background Filtering Statistics:")
+        print(f"  Foreground images: {num_foreground:,}")
+        print(f"  Background images (original): {num_background_total:,}")
+        print(f"  Background images (sampled): {len(self.sampled_background_indices):,}")
+        print(f"  Target ratio: {background_ratio:.1f}:1")
+        print(f"  Actual ratio: {actual_ratio:.1f}:1")
+        print(f"  Total images: {len(self.active_indices):,}")
+        print(f"  Background %: {len(self.sampled_background_indices)/len(self.active_indices)*100:.1f}%")
+        print(f"{'='*60}\n")
+
+    def __len__(self):
+        return len(self.active_indices)
+
+    def __getitem__(self, idx):
+        # Map filtered index to original dataset index
+        original_idx = self.active_indices[idx]
+        return self.base_dataset[original_idx]
 
 
 def _make_args_namespace(data_cfg: DataConfig, model_cfg: ModelConfig, image_set: str):
@@ -67,12 +144,15 @@ def build_train_dataset(data_cfg: DataConfig, model_cfg: ModelConfig):
     """
     Build training dataset using RF-DETR's dataset builders.
 
+    If background_ratio is specified in data_cfg, wraps the dataset with
+    BackgroundFilteredDataset to sample background images.
+
     Args:
         data_cfg: Data configuration
         model_cfg: Model configuration
 
     Returns:
-        Training dataset
+        Training dataset (possibly wrapped with background filtering)
     """
     args = _make_args_namespace(data_cfg, model_cfg, "train")
     dataset = build_dataset(
@@ -80,6 +160,15 @@ def build_train_dataset(data_cfg: DataConfig, model_cfg: ModelConfig):
         args=args,
         resolution=model_cfg.resolution
     )
+
+    # Apply background filtering if specified
+    if data_cfg.background_ratio is not None:
+        dataset = BackgroundFilteredDataset(
+            base_dataset=dataset,
+            background_ratio=data_cfg.background_ratio,
+            seed=data_cfg.background_filter_seed
+        )
+
     return dataset
 
 

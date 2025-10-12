@@ -33,8 +33,10 @@ model:
   sa_nheads: 8
   ca_nheads: 16
   dec_n_points: 2
-  num_queries: 300
-  num_select: 300
+
+  # Query settings (reduced for sparse detection - max 25 objects per patch)
+  num_queries: 50  # Reduced from 300 (max objects is 25, 50 provides 2x safety margin)
+  num_select: 50   # Should match num_queries
 
   # Advanced settings
   projector_scale: ["P4"]
@@ -77,6 +79,12 @@ data:
   do_random_resize_via_padding: false
   square_resize_div_64: true
 
+  # Background filtering (for sparse detection with many background patches)
+  # 5:1 ratio = 5 background images for every 1 foreground image (~83% background)
+  # Original dataset has 16.5:1 ratio (94% background) which is too high
+  background_ratio: 5
+  background_filter_seed: 42
+
   # Class names (6 species from HerdNet)
   class_names: ["species_1", "species_2", "species_3", "species_4", "species_5", "species_6"]
 
@@ -104,7 +112,7 @@ trainer:
   epochs: 100
   batch_size: 4
   grad_accum_steps: 4  # Gradient accumulation for larger effective batch size
-  num_workers: 2
+  num_workers: 8
 
   # Learning rate schedule
   warmup_epochs: 0.0  # Warmup duration in epochs
@@ -122,7 +130,7 @@ trainer:
 
   # Logging
   tensorboard: true
-  wandb: true
+  wandb: false
   project: animaldet
   run: ${experiment.name}
 
