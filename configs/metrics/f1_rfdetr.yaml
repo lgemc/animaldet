@@ -1,0 +1,17 @@
+# Configuration for calculating F1 scores on RF-DETR predictions
+
+# Ground truth annotations
+gt_csv_path: data/herdnet/raw/groundtruth/csv/test_big_size_A_B_E_K_WH_WB.csv
+
+# Predictions from model
+pred_csv_path: outputs/inference/rfdetr_detections.csv
+
+# Output path for F1 score results
+output_csv_path: outputs/metrics/rfdetr_f1_scores.csv
+
+# Prediction format: 'rfdetr', 'herdnet', or 'auto' to auto-detect
+prediction_format: rfdetr
+
+# Distance threshold in pixels for true positive match
+# Detection center must be within this distance from GT center
+distance_threshold: 20.0
