@@ -90,6 +90,8 @@ class InferenceConfig:
     checkpoint_path: Optional[str] = None  # Path to model checkpoint
     threshold: float = 0.5  # Detection threshold
     batch_size: int = 1  # Batch size for inference
+    output_path: str = MISSING
+    output_file: str = MISSING
 
 
 @dataclass

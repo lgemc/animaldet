@@ -3,10 +3,11 @@
 
 # Experiment metadata
 experiment:
-  name: herdnet_inference
+  name: herdnet_inference_test
   tags:
     - herdnet
     - inference
+    - test
 
 # Model configuration (must match training config)
 model:
@@ -27,20 +28,28 @@ model:
 # Dataset configuration (for loading images)
 data:
   patch_size: 512
-  test_csv: ${oc.env:DATA_DIR,./data}/herdnet/test_patches/gt.csv
-  test_root: ${oc.env:DATA_DIR,./data}/herdnet/test_patches
+  test_csv: data/herdnet/raw/groundtruth/csv/test_big_size_A_B_E_K_WH_WB.csv
+  test_root: data/herdnet/raw/test
 
   # Transform params (no augmentation for inference)
   radius: 2
   mask_down_ratio: 32
 
+# Evaluator configuration (for stitcher)
+evaluator:
+  metrics_radius: 20
+  stitcher_overlap: 160
+  stitcher_reduction: mean
+
 # Inference configuration
 inference:
   name: HerdNetInference  # Inference registry name
   device: cuda  # Device for inference ('cuda' or 'cpu')
-  checkpoint_path: ./output/best_model.pth  # Path to trained model checkpoint
+  checkpoint_path: ./outputs/herdnet_baseline/20220413_HerdNet_General_dataset_2022.pth # Path to trained model checkpoint
   threshold: 0.5  # Detection confidence threshold (0.0-1.0)
   batch_size: 1  # Batch size for inference
+  output_path: ./outputs/inference  # Output directory for inference results
+  output_file: herdnet_baseline.csv  # Output file name for predictions
 
 # Seed for reproducibility
 seed: 9292

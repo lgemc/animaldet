@@ -100,6 +100,30 @@ def visualize(
     )
 
 
+@app.command(name="infer")
+def infer(
+    config: Annotated[str, typer.Option("--config", help="Path to inference configuration file (YAML)")] = None,
+    checkpoint: Annotated[str, typer.Option("--checkpoint", help="Path to model checkpoint")] = None,
+    images_dir: Annotated[str, typer.Option("--images-dir", help="Directory containing images")] = None,
+    output_csv: Annotated[str, typer.Option("--output-csv", help="Path to output CSV file")] = None,
+    threshold: Annotated[float, typer.Option("--threshold", help="Detection threshold")] = None,
+    device: Annotated[str, typer.Option("--device", help="Device to use for inference")] = "cuda",
+    batch_size: Annotated[int, typer.Option("--batch-size", help="Batch size for inference")] = None,
+):
+    """Run inference on full-size images (HerdNet with stitcher)."""
+    from tools.inference_cmd import inference_main
+
+    inference_main(
+        config=config,
+        checkpoint=checkpoint,
+        images_dir=images_dir,
+        output_csv=output_csv,
+        threshold=threshold,
+        device=device,
+        batch_size=batch_size,
+    )
+
+
 def main():
     """Entry point for the CLI."""
     app()

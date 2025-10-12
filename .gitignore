@@ -230,3 +230,4 @@ override.tf.json
 
 # DVC
 .dvc/cache
+/outputs
