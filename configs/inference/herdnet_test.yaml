@@ -1,6 +1,9 @@
 # HerdNet Inference Configuration
 # This config is used for running inference with trained HerdNet models
 
+# Model type (used by unified inference system)
+model_type: herdnet
+
 # Experiment metadata
 experiment:
   name: herdnet_inference_test
@@ -50,6 +53,8 @@ inference:
   batch_size: 1  # Batch size for inference
   output_path: ./outputs/inference  # Output directory for inference results
   output_file: herdnet_baseline.csv  # Output file name for predictions
+  detections_csv: herdnet_baseline_detections.csv  # Output filename for detections
+  results_csv: herdnet_baseline_scores.csv  # Output filename for metrics/results
 
 # Seed for reproducibility
 seed: 9292

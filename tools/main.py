@@ -77,6 +77,7 @@ def visualize(
     config: Annotated[str, typer.Option("--config", help="Path to visualization config YAML file")] = None,
     dataset_type: Annotated[str, typer.Option("--dataset-type", help="Dataset type (ungulate or herdnet)")] = None,
     csv_path: Annotated[str, typer.Option("--csv-path", help="Path to CSV file with annotations")] = None,
+    gt_csv_path: Annotated[str, typer.Option("--gt-csv-path", help="Path to CSV file with ground truth annotations (optional)")] = None,
     images_dir: Annotated[str, typer.Option("--images-dir", help="Directory containing images")] = None,
     name: Annotated[str, typer.Option("--name", help="Dataset name in FiftyOne")] = "dataset",
     persistent: Annotated[bool, typer.Option("--persistent", help="Persist dataset to FiftyOne database")] = False,
@@ -91,6 +92,7 @@ def visualize(
         config=config,
         dataset_type=dataset_type,
         csv_path=csv_path,
+        gt_csv_path=gt_csv_path,
         images_dir=images_dir,
         name=name,
         persistent=persistent,
@@ -109,8 +111,9 @@ def infer(
     threshold: Annotated[float, typer.Option("--threshold", help="Detection threshold")] = None,
     device: Annotated[str, typer.Option("--device", help="Device to use for inference")] = "cuda",
     batch_size: Annotated[int, typer.Option("--batch-size", help="Batch size for inference")] = None,
+    model_type: Annotated[str, typer.Option("--model-type", help="Model type: 'herdnet' or 'rfdetr' (auto-detected from config if not specified)")] = None,
 ):
-    """Run inference on full-size images (HerdNet with stitcher)."""
+    """Run inference on full-size images using stitcher (supports HerdNet and RF-DETR)."""
     from tools.inference_cmd import inference_main
 
     inference_main(
@@ -121,6 +124,7 @@ def infer(
         threshold=threshold,
         device=device,
         batch_size=batch_size,
+        model_type=model_type,
     )
 
 

@@ -33,6 +33,12 @@ Folder structure:
         └── *.JPG
 ```
 
+**Note: all image metadata was removed in order to prevent visualization missmatches using the next command**:
+```bash
+# Command executed over over test, train and validation folders
+ls | pv -l | xargs -I {} mogrify -strip {}
+```
+
 ## Delplanque uploaded dataset
 
 Presented at: [HerdNet repo](https://github.com/Alexandre-Delplanque/HerdNet)

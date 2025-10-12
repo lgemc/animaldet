@@ -92,6 +92,8 @@ class InferenceConfig:
     batch_size: int = 1  # Batch size for inference
     output_path: str = MISSING
     output_file: str = MISSING
+    detections_csv: str = MISSING
+    results_csv: str = MISSING
 
 
 @dataclass

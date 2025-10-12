@@ -32,7 +32,7 @@ model:
 data:
   patch_size: 512
 
-  train_csv: ${oc.env:DATA_DIR,./data}/herdnet/train_patches.csv
+  train_csv: ${oc.env:DATA_DIR,./data}/herdnet/proc
   train_root: ${oc.env:DATA_DIR,./data}/herdnet/train_patches
   val_csv: ${oc.env:DATA_DIR,./data}/herdnet/val_patches/gt.csv
   val_root: ${oc.env:DATA_DIR,./data}/herdnet/val_patches

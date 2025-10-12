@@ -13,6 +13,7 @@ def visualize_main(
     config: Optional[str],
     dataset_type: Optional[str],
     csv_path: Optional[str],
+    gt_csv_path: Optional[str],
     images_dir: Optional[str],
     name: str,
     persistent: bool,
@@ -26,6 +27,7 @@ def visualize_main(
         config: Path to configuration file
         dataset_type: Dataset type (ungulate or herdnet)
         csv_path: Path to CSV file with annotations
+        gt_csv_path: Path to CSV file with ground truth annotations (optional)
         images_dir: Directory containing images
         name: Dataset name in FiftyOne
         persistent: Persist dataset to FiftyOne database
@@ -38,6 +40,7 @@ def visualize_main(
         cfg = OmegaConf.load(config)
         dataset_type = dataset_type or cfg.dataset_type
         csv_path = csv_path or cfg.csv_path
+        gt_csv_path = gt_csv_path or cfg.get("gt_csv_path", None)
         images_dir = images_dir or cfg.images_dir
         name = cfg.get("name", name)
         persistent = cfg.get("persistent", persistent)
@@ -84,6 +87,7 @@ def visualize_main(
             name=name,
             persistent=persistent,
             database_uri=database_uri,
+            gt_csv_path=gt_csv_path,
         )
     else:
         raise ValueError(f"Unknown dataset type: {dataset_type}")

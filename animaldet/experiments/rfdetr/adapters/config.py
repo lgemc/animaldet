@@ -34,7 +34,7 @@ class ModelConfig:
     # Other architecture params
     projector_scale: list[str] = field(default_factory=lambda: ["P4"])
     out_feature_indexes: list[int] = field(default_factory=lambda: [3, 6, 9, 12])
-    positional_encoding_size: int = 36
+    positional_encoding_size: Optional[int] = None  # Use None to let variant choose default
     group_detr: int = 13
 
     # Training settings
@@ -84,6 +84,8 @@ class DataConfig:
     dataset_dir: str = MISSING
     train_annotation: Optional[str] = None  # For COCO format
     val_annotation: Optional[str] = None
+    test_csv: Optional[str] = None  # For test/inference
+    test_root: Optional[str] = None  # For test/inference
 
     # Data augmentation
     multi_scale: bool = True
@@ -151,6 +153,7 @@ class EvaluatorConfig:
     """Evaluation configuration."""
     confidence_threshold: float = 0.5
     nms_threshold: float = 0.45
+    metrics_radius: float = 20.0  # Matching radius for point-based metrics (pixels)
     eval_on_ema: bool = True
     metrics: Optional[dict[str, Any]] = None
 
@@ -163,6 +166,19 @@ class IntegrationsConfig:
 
 
 @dataclass
+class InferenceConfig:
+    """Inference configuration."""
+    name: str = "RFDETRInference"  # Inference registry name
+    device: str = "cuda"  # Device for inference
+    checkpoint_path: Optional[str] = None  # Path to model checkpoint
+    threshold: float = 0.5  # Detection threshold
+    batch_size: int = 4  # Batch size for patch inference
+    output_path: str = MISSING
+    detections_csv: str = MISSING
+    results_csv: str = MISSING
+
+
+@dataclass
 class RFDETRExperimentConfig:
     """Complete RF-DETR experiment configuration."""
     experiment: ExperimentMetadata = field(default_factory=ExperimentMetadata)
@@ -171,5 +187,6 @@ class RFDETRExperimentConfig:
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     trainer: TrainerConfig = field(default_factory=TrainerConfig)
     evaluator: EvaluatorConfig = field(default_factory=EvaluatorConfig)
+    inference: InferenceConfig = field(default_factory=InferenceConfig)
     integrations: Optional[IntegrationsConfig] = None
     seed: int = 9292

@@ -64,13 +64,16 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> torch.nn.Module:
         "num_select": cfg.num_select,
         "projector_scale": cfg.projector_scale,
         "out_feature_indexes": cfg.out_feature_indexes,
-        "positional_encoding_size": cfg.positional_encoding_size,
         "resolution": cfg.resolution,
+        # Explicitly set pretrain_weights to override RF-DETR's default
+        # RF-DETR has default pretrain_weights="rf-detr-base.pth" which downloads from internet
+        # We need to explicitly pass None to prevent this when loading our own checkpoint
+        "pretrain_weights": cfg.pretrain_weights if cfg.pretrain_weights else None,
     }
 
-    # Add optional pretrained weights
-    if cfg.pretrain_weights:
-        model_kwargs["pretrain_weights"] = cfg.pretrain_weights
+    # Only add positional_encoding_size if it's not None (use variant default otherwise)
+    if cfg.positional_encoding_size is not None:
+        model_kwargs["positional_encoding_size"] = cfg.positional_encoding_size
 
     # Create model instance (this is a wrapper: RFDETR class)
     rfdetr_wrapper = model_class(**model_kwargs)
@@ -78,8 +81,10 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> torch.nn.Module:
     # Reinitialize detection head with correct number of classes
     # The RF-DETR wrapper may have loaded pretrained weights with different num_classes
     # We need to ensure the head matches our dataset's num_classes
+    # NOTE: RF-DETR uses DETR-style classification (no separate background class)
+    # The num_classes should match exactly what was used during training
     print(f"Restarting number of classes to {cfg.num_classes}")
-    rfdetr_wrapper.model.reinitialize_detection_head(cfg.num_classes+1)  # +1 for background class
+    rfdetr_wrapper.model.reinitialize_detection_head(cfg.num_classes)
 
     # Extract the actual PyTorch model from the nested wrappers
     # rfdetr_wrapper.model is a Model instance
