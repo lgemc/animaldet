@@ -129,11 +129,14 @@ class RFDETRStitcher(ImageToPatches):
                 pred_logits = outputs['pred_logits'][i]  # [num_queries, num_classes]
                 pred_boxes = outputs['pred_boxes'][i]    # [num_queries, 4]
 
-                # Convert logits to scores (softmax)
-                pred_scores = F.softmax(pred_logits, dim=-1)
+                # Convert logits to scores (sigmoid for DETR-style models without background class)
+                pred_scores = pred_logits.sigmoid()
 
                 # Get max score and class for each query
                 scores, labels = pred_scores.max(dim=-1)
+
+                # Convert from 0-indexed to 1-indexed labels to match ground truth format
+                labels = labels + 1
 
                 # Filter by confidence threshold
                 keep = scores > self.confidence_threshold
