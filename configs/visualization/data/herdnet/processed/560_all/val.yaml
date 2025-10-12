@@ -1,0 +1,7 @@
+dataset_type: herdnet
+csv_path: data/herdnet/processed/560_all/val/gt.csv
+images_dir: data/herdnet/processed/560_all/val
+name: herdnet_560_all_val
+persistent: false
+point_radius: 10
+database_uri: mongodb://localhost:27017

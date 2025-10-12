@@ -141,12 +141,14 @@ class PatchesBuffer:
         patch_size: Tuple[int, int],
         overlap: int = 0,
         column_mapping: Optional[dict] = None,
+        save_all: bool = False,
     ):
         self.csv_path = csv_path
         self.images_root = images_root
         self.patch_height, self.patch_width = patch_size
         self.overlap = overlap
         self.column_mapping = column_mapping
+        self.save_all = save_all
 
         self._buffer = None
 
@@ -209,6 +211,9 @@ class PatchesBuffer:
             stride_h = self.patch_height - self.overlap
             stride_w = self.patch_width - self.overlap
 
+            # Track patches with annotations (if save_all=True)
+            patches_with_annotations = set()
+
             patch_idx = 0
             for y in range(0, img_height, stride_h):
                 for x in range(0, img_width, stride_w):
@@ -216,6 +221,8 @@ class PatchesBuffer:
                     x_end = min(x + self.patch_width, img_width)
 
                     patch_bbox = BBox(x, y, x_end, y_end)
+                    patch_name = f"{Path(img_name).stem}_patch_{patch_idx:04d}{Path(img_name).suffix}"
+                    has_annotations = False
 
                     # Check which annotations fall in this patch
                     for _, row in img_df.iterrows():
@@ -255,8 +262,7 @@ class PatchesBuffer:
                         # Calculate relative coordinates within patch
                         rel_x = ann_x - x
                         rel_y = ann_y - y
-
-                        patch_name = f"{Path(img_name).stem}_patch_{patch_idx:04d}{Path(img_name).suffix}"
+                        has_annotations = True
 
                         patch_data = {
                             'images': patch_name,
@@ -276,6 +282,18 @@ class PatchesBuffer:
                         if has_labels:
                             patch_data['labels'] = label
 
+                        patches_data.append(patch_data)
+
+                    # Track patches with annotations
+                    if has_annotations:
+                        patches_with_annotations.add(patch_idx)
+                    elif self.save_all:
+                        # Add background patch entry (no annotations)
+                        patch_data = {
+                            'images': patch_name,
+                            'base_images': img_name,
+                            'limits': patch_bbox,
+                        }
                         patches_data.append(patch_data)
 
                     patch_idx += 1
@@ -369,7 +387,7 @@ def extract_patches(
     if csv_path is not None:
         # Create patches buffer with annotations
         patches_buffer = PatchesBuffer(
-            csv_path, images_root, patch_size, overlap, column_mapping
+            csv_path, images_root, patch_size, overlap, column_mapping, save_all
         ).buffer
 
         # Save updated annotations

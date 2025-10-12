@@ -1,0 +1,159 @@
+# RF-DETR Experiment Configuration
+# Real-time transformer-based object detection
+
+# Experiment metadata
+experiment:
+  name: rfdetr_baseline_all
+  tags:
+    - rfdetr
+    - transformer
+    - detection
+    - baseline
+
+# Random seed for reproducibility
+seed: 9292
+
+# Model configuration
+model:
+  # Model variant: nano, small, medium, base, large
+  variant: base
+
+  # Number of classes (must match your dataset)
+  num_classes: 6
+
+  # Resolution (auto-set based on variant, but can override)
+  # nano: 384, small: 512, medium: 576, base: 560, large: 560
+  resolution: 560
+
+  # Architecture parameters (auto-configured per variant, but can override)
+  encoder: dinov2_windowed_small
+  hidden_dim: 256
+  patch_size: 14
+  num_windows: 2
+  dec_layers: 4
+  sa_nheads: 8
+  ca_nheads: 16
+  dec_n_points: 2
+  num_queries: 300
+  num_select: 300
+
+  # Advanced settings
+  projector_scale: ["P4"]
+  out_feature_indexes: [3, 6, 9, 12]
+  positional_encoding_size: 37
+  group_detr: 13
+
+  # Training flags
+  two_stage: true
+  bbox_reparam: true
+  lite_refpoint_refine: true
+  layer_norm: true
+  amp: true  # Automatic Mixed Precision
+  gradient_checkpointing: false  # Enable for large models to save memory
+
+  # Loss settings
+  ia_bce_loss: true
+  cls_loss_coef: 1.0
+
+  # Pretrained weights (null to train from scratch, or path/model name)
+  # Options: "rf-detr-nano.pth", "rf-detr-small.pth", "rf-detr-medium.pth",
+  #          "rf-detr-base.pth", "rf-detr-large.pth"
+  pretrain_weights: rf-detr-base.pth
+  device: cuda
+
+# Dataset configuration
+data:
+  # Dataset format: coco, o365, roboflow
+  dataset_file: roboflow  # or 'coco' for standard COCO format
+
+  # Dataset directory (must contain train/, valid/, test/ subdirectories for Roboflow format)
+  dataset_dir: ${oc.env:DATA_DIR,./data}/rfdetr/560
+
+  # For COCO format, specify annotation files
+  train_annotation: null  # e.g., "annotations/instances_train2017.json"
+  val_annotation: null    # e.g., "annotations/instances_val2017.json"
+
+  # Data augmentation settings
+  multi_scale: true  # Multi-scale training
+  expanded_scales: true  # Use expanded scale range
+  do_random_resize_via_padding: false
+  square_resize_div_64: true
+
+  # Class names (optional, will be loaded from dataset if not specified)
+  class_names: null
+
+# Optimizer configuration
+optimizer:
+  lr: 1.0e-4  # Base learning rate
+  lr_encoder: 1.5e-4  # Encoder learning rate (usually higher)
+  weight_decay: 1.0e-4
+
+  # Learning rate decay strategies
+  lr_vit_layer_decay: 0.8  # Layer-wise LR decay for ViT
+  lr_component_decay: 0.7  # Component-wise LR decay
+  drop_path: 0.0  # Stochastic depth drop path rate
+
+  # EMA (Exponential Moving Average) settings
+  use_ema: true
+  ema_decay: 0.993
+  ema_tau: 100
+
+# Training configuration
+trainer:
+  name: RFDETRTrainer  # Trainer registry name
+
+  # Training duration
+  epochs: 100
+  batch_size: 8
+  grad_accum_steps: 4  # Gradient accumulation for larger effective batch size
+  num_workers: 2
+
+  # Learning rate schedule
+  warmup_epochs: 0.0  # Warmup duration in epochs
+  lr_drop: 100  # Epoch to drop LR (step decay)
+
+  # Checkpointing
+  checkpoint_interval: 1  # Save checkpoint every N epochs
+  work_dir: ./output/rfdetr
+
+  # Early stopping
+  early_stopping: false
+  early_stopping_patience: 10
+  early_stopping_min_delta: 0.001
+  early_stopping_use_ema: false
+
+  # Logging
+  tensorboard: true
+  wandb: true
+  project: animaldet
+  run: ${experiment.name}
+
+  # Evaluation
+  run_test: true  # Run test evaluation after training
+
+# Evaluation configuration
+evaluator:
+  confidence_threshold: 0.5
+  nms_threshold: 0.45
+  eval_on_ema: true  # Evaluate on EMA model if available
+
+  # Additional metrics configuration
+  metrics:
+    f1_score:
+      enabled: true
+      center_threshold: 20.0  # Max distance in pixels for center-based matching. Kept in 20, the same amount at herdnet
+      score_threshold: 0.5    # Min confidence score for predictions
+      verbose: false          # Print detailed debug information
+
+# Integrations configuration
+integrations:
+  tensorboard:
+    enabled: ${trainer.tensorboard}
+    log_dir: ${trainer.work_dir}/tensorboard
+
+  wandb:
+    enabled: ${trainer.wandb}
+    name: ${experiment.name}
+    tags: ${experiment.tags}
+    project: ${trainer.project}
+    notes: RF-DETR experiment for real-time object detection
