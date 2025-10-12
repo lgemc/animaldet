@@ -265,8 +265,8 @@ def calculate_metrics(
         ])
 
         det_centers = np.column_stack([
-            img_dets['x'].values,
-            img_dets['y'].values,
+            (img_dets['x'].values + img_dets['x_max'].values) / 2,
+            (img_dets['y'].values + img_dets['y_max'].values) / 2,
         ]) if len(img_dets) > 0 else np.empty((0, 2))
 
         # Match detections to ground truth

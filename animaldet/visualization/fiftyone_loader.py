@@ -45,6 +45,14 @@ def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
             'y2': 'y_max'
         }, inplace=True)
 
+    # RF-DETR bbox format: x, y, x_max, y_max -> x_min, y_min, x_max, y_max
+    # (x, y are top-left corner, not center points)
+    elif 'x' in columns and 'y' in columns and 'x_max' in columns and 'y_max' in columns:
+        df.rename(columns={
+            'x': 'x_min',
+            'y': 'y_min'
+        }, inplace=True)
+
     return df
 
 
