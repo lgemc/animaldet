@@ -231,3 +231,9 @@ override.tf.json
 # DVC
 .dvc/cache
 /outputs
+
+# wandb
+wandb
+
+# Ansible
+infra/ansible/inventory.ini
