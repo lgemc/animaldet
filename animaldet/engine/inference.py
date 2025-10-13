@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
 from abc import ABC, abstractmethod
 
+from animaldet.utils import get_device, move_to_device
+
 
 class BaseInference(ABC):
     """
@@ -20,7 +22,7 @@ class BaseInference(ABC):
 
     Args:
         model: The model to use for inference
-        device: Device to run inference on ('cuda' or 'cpu')
+        device: Device to run inference on ('cuda', 'mps', or 'cpu')
         checkpoint_path: Optional path to model checkpoint to load
     """
 
@@ -31,10 +33,10 @@ class BaseInference(ABC):
         checkpoint_path: Optional[Union[str, Path]] = None
     ):
         self.model = model
-        self.device = device if torch.cuda.is_available() or device == "cpu" else "cpu"
+        self.device = get_device(device)
 
         # Move model to device
-        self.model = self.model.to(self.device)
+        self.model = move_to_device(self.model, self.device)
 
         # Load checkpoint if provided
         if checkpoint_path is not None:
@@ -89,11 +91,8 @@ class BaseInference(ABC):
         """
         self.model.eval()
 
-        # Move inputs to device if tensor
-        if isinstance(inputs, torch.Tensor):
-            inputs = inputs.to(self.device)
-        elif isinstance(inputs, list) and all(isinstance(x, torch.Tensor) for x in inputs):
-            inputs = [x.to(self.device) for x in inputs]
+        # Move inputs to device
+        inputs = move_to_device(inputs, self.device)
 
         # Run model-specific inference
         return self._predict_impl(inputs, **kwargs)

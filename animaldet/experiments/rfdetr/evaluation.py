@@ -4,6 +4,7 @@ import torch
 from typing import Any, Dict, Optional
 
 from animaldet.evaluation.f1_evaluator import F1Evaluator
+from animaldet.utils import get_autocast_kwargs
 
 
 def evaluate_with_metrics(
@@ -65,8 +66,8 @@ def evaluate_with_metrics(
 
     from torch.amp import autocast, GradScaler
 
-    def get_autocast_args(args):
-        return {'device_type': 'cuda', 'enabled': args.amp, 'dtype': torch.bfloat16}
+    # Get autocast kwargs for the device
+    autocast_kwargs = get_autocast_kwargs(device, enabled=args.amp)
 
     for samples, targets in metric_logger.log_every(data_loader, 10, header):
         samples = samples.to(device)
@@ -75,7 +76,7 @@ def evaluate_with_metrics(
         if fp16_eval:
             samples.tensors = samples.tensors.half()
 
-        with autocast(**get_autocast_args(args)):
+        with autocast(**autocast_kwargs):
             outputs = model(samples)
 
         if fp16_eval:

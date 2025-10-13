@@ -10,6 +10,7 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 
 from animaldet.engine.hooks import HookManager, Hook
+from animaldet.utils import get_device
 
 # Import RF-DETR training utilities
 import sys
@@ -69,7 +70,7 @@ class RFDETRTrainer:
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.ema_model = ema_model
-        self.device = torch.device(device)
+        self.device = get_device(device, verbose=False)
         self.args = args
         self.work_dir = Path(work_dir)
         self.work_dir.mkdir(parents=True, exist_ok=True)

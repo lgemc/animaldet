@@ -8,6 +8,7 @@ import torch
 from omegaconf import OmegaConf
 
 from animaldet.engine.registry import TRAINER_BUILDERS
+from animaldet.utils import set_seed
 
 # Import builders to ensure they are registered
 from animaldet.experiments.herdnet import builder as _  # noqa: F401
@@ -40,14 +41,8 @@ def set_random_seed(seed: int) -> None:
     Args:
         seed: Random seed value
     """
-    import random
-    import numpy as np
-
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+    # Use centralized seed utility
+    set_seed(seed)
 
 
 def build_trainer_from_config(cfg: Dict[str, Any], trainer_name: Optional[str] = None) -> Any:

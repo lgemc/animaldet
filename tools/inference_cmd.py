@@ -14,6 +14,8 @@ from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from animaldet.utils import get_device
+
 logger = logging.getLogger(__name__)
 
 
@@ -150,8 +152,12 @@ def _inference_herdnet(
     logger.info(f"Checkpoint: {checkpoint_path}")
     logger.info(f"Output: {output_path}")
 
+    # Get device using centralized utility
+    actual_device = get_device(device)
+
     # Build and load model
-    model = build_model(cfg.model, device=device)
+    logger.info(f"Building model...")
+    model = build_model(cfg.model, device=str(actual_device))
     model = load_model(model, pth_path=str(checkpoint_path))
 
     # Load and normalize CSV columns (handle both Image/Label and images/labels)
@@ -334,9 +340,12 @@ def _inference_rfdetr(
     logger.info(f"Test CSV: {test_csv_path}")
     logger.info(f"Output: {output_path}")
 
+    # Get device using centralized utility
+    actual_device = get_device(device)
+
     # Build and load model
-    logger.info("Building RF-DETR model...")
-    model = build_model(cfg.model, device=device)
+    logger.info(f"Building RF-DETR model...")
+    model = build_model(cfg.model, device=str(actual_device))
 
     # Load checkpoint
     checkpoint_data = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
@@ -348,6 +357,7 @@ def _inference_rfdetr(
         state_dict = checkpoint_data
     model.load_state_dict(state_dict, strict=True)
     logger.info(f"Loaded checkpoint from {checkpoint_path}")
+    model = model.to(actual_device)
     model.eval()
 
     # Load and normalize CSV
@@ -383,7 +393,7 @@ def _inference_rfdetr(
         batch_size=cfg.inference.batch_size,
         confidence_threshold=cfg.inference.threshold,
         nms_threshold=cfg.evaluator.nms_threshold,
-        device_name=device,
+        device_name=str(actual_device),
     )
 
     # Create transforms for preprocessing

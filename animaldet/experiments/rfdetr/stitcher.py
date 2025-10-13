@@ -13,6 +13,8 @@ from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
 from pathlib import Path
 import sys
 
+from animaldet.utils import get_device
+
 # Add rf-detr to path
 rfdetr_path = Path("/home/lmanrique/Do/rf-detr")
 if str(rfdetr_path) not in sys.path:
@@ -62,7 +64,9 @@ class RFDETRStitcher(ImageToPatches):
         self.batch_size = batch_size
         self.confidence_threshold = confidence_threshold
         self.nms_threshold = nms_threshold
-        self.device = torch.device(device_name)
+
+        # Get device using centralized utility
+        self.device = get_device(device_name, verbose=False)
 
         self.model.to(self.device)
         self.model.eval()

@@ -48,9 +48,11 @@ def build_rfdetr_trainer(cfg: Dict[str, Any]) -> RFDETRTrainer:
     rfdetr_cfg = OmegaConf.structured(RFDETRExperimentConfig)
     rfdetr_cfg = OmegaConf.merge(rfdetr_cfg, cfg)
 
+    from animaldet.utils import get_device
+
     # Build model using registry
     model = MODELS.build("RFDETR", rfdetr_cfg.model)
-    device = torch.device(rfdetr_cfg.model.device)
+    device = get_device(rfdetr_cfg.model.device)
     model = model.to(device)
 
     # Build criterion and postprocessors

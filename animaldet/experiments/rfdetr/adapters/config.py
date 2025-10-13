@@ -73,7 +73,7 @@ class ModelConfig:
 
     # Pretrained weights
     pretrain_weights: Optional[str] = None
-    device: str = "cuda"
+    device: str = "cuda"  # 'cuda', 'mps', or 'cpu'
 
 
 @dataclass

@@ -6,11 +6,13 @@ This CLI provides a unified interface for all animaldet tools including:
 - train: Train animal detection models
 - patcher: Extract patches from images
 - visualize: Visualize datasets with FiftyOne
+- hf-upload: Upload datasets to HuggingFace Hub
 
 Usage:
     animaldet train --config configs/experiment/herdnet.yaml
     animaldet patcher --config configs/patcher/default.yaml
     animaldet visualize --dataset-type herdnet --csv-path data.csv --images-dir images/
+    animaldet hf-upload --dataset-dir data/herdnet/processed/560_all --repo-id myorg/herdnet-560-all
 """
 
 import typer
@@ -126,6 +128,43 @@ def infer(
         batch_size=batch_size,
         model_type=model_type,
     )
+
+
+@app.command(name="hf-upload")
+def hf_upload(
+    dataset_dir: Annotated[str, typer.Option("--dataset-dir", help="Path to dataset directory to upload")],
+    repo_id: Annotated[str, typer.Option("--repo-id", help="HuggingFace repository ID (e.g., 'username/dataset-name')")],
+    token: Annotated[str, typer.Option("--token", help="HuggingFace API token (uses HF_TOKEN env var if not provided)")] = None,
+    private: Annotated[bool, typer.Option("--private", help="Create a private repository")] = False,
+    commit_message: Annotated[str, typer.Option("--commit-message", help="Custom commit message")] = None,
+    no_readme: Annotated[bool, typer.Option("--no-readme", help="Skip automatic README generation")] = False,
+):
+    """Upload dataset to HuggingFace Hub.
+
+    Supports both COCO format (train2017/, val2017/, annotations/) and
+    processed format (train/, val/, test/ with gt.csv files).
+
+    Examples:
+        animaldet hf-upload --dataset-dir data/herdnet/processed/560_all --repo-id myorg/herdnet-560-all
+        animaldet hf-upload --dataset-dir data/rfdetr/herdnet/560_all --repo-id myorg/herdnet-560-all-coco --private
+    """
+    from animaldet.data.integrations.huggingface import upload_dataset_to_hf
+
+    try:
+        repo_url = upload_dataset_to_hf(
+            dataset_dir=dataset_dir,
+            repo_id=repo_id,
+            token=token,
+            private=private,
+            commit_message=commit_message,
+            create_readme=not no_readme,
+        )
+
+        print(f"✓ Dataset uploaded successfully to: {repo_url}")
+
+    except Exception as e:
+        print(f"✗ Error uploading dataset: {e}")
+        raise typer.Exit(code=1)
 
 
 def main():

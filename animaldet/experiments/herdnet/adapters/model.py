@@ -7,6 +7,7 @@ from torch.nn import CrossEntropyLoss
 
 from .config import ModelConfig
 from animaldet.engine.registry import MODELS
+from animaldet.utils import get_device, move_to_device
 
 
 def build_model(cfg: ModelConfig, device: str = "cuda") -> LossWrapper:
@@ -26,10 +27,9 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> LossWrapper:
         down_ratio=cfg.down_ratio
     )
 
-    if device == "cuda" and torch.cuda.is_available():
-        model = model.cuda()
-    else:
-        model = model.to(device)
+    # Move model to device
+    device_obj = get_device(device, verbose=False)
+    model = move_to_device(model, device_obj)
 
     # Build losses
     losses = []
@@ -40,10 +40,8 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> LossWrapper:
             weight = None
             if loss_cfg.weight is not None:
                 weight = torch.Tensor(loss_cfg.weight)
-                if device == "cuda" and torch.cuda.is_available():
-                    weight = weight.cuda()
-                else:
-                    weight = weight.to(device)
+                # Move weight to same device as model
+                weight = move_to_device(weight, device_obj)
             loss_fn = CrossEntropyLoss(reduction="mean", weight=weight)
         else:
             raise ValueError(f"Unknown loss: {loss_cfg.name}")

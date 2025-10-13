@@ -20,6 +20,7 @@ import numpy as np
 from animaldet.experiments.rfdetr.adapters.model import build_model
 from animaldet.experiments.rfdetr.adapters.config import RFDETRExperimentConfig
 from animaldet.experiments.rfdetr.stitcher import RFDETRStitcher
+from animaldet.utils import get_device
 
 logger = logging.getLogger(__name__)
 
@@ -110,10 +111,14 @@ def inference_main(
     logger.info(f"Test CSV: {test_csv_path}")
     logger.info(f"Output: {output_path}")
 
+    # Get device using centralized utility
+    actual_device = get_device(device)
+
     # Build and load model
-    logger.info("Building RF-DETR model...")
-    model = build_model(cfg.model, device=device)
+    logger.info(f"Building RF-DETR model...")
+    model = build_model(cfg.model, device=str(actual_device))
     model = load_checkpoint(model, str(checkpoint_path))
+    model = model.to(actual_device)
     model.eval()
 
     # Load and normalize CSV
@@ -149,7 +154,7 @@ def inference_main(
         batch_size=cfg.inference.batch_size,
         confidence_threshold=cfg.inference.threshold,
         nms_threshold=cfg.evaluator.nms_threshold,
-        device_name=device,
+        device_name=str(actual_device),
     )
 
     # Create transforms for preprocessing
