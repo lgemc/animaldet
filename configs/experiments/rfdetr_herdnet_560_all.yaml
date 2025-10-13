@@ -29,17 +29,17 @@ model:
   hidden_dim: 256
   patch_size: 14
   num_windows: 2
-  dec_layers: 4
+  dec_layers: 3
   sa_nheads: 8
   ca_nheads: 16
   dec_n_points: 2
 
   # Query settings (reduced for sparse detection - max 25 objects per patch)
-  num_queries: 50  # Reduced from 300 (max objects is 25, 50 provides 2x safety margin)
-  num_select: 50   # Should match num_queries
+  num_queries: 100
+  num_select: 100
 
   # Advanced settings
-  projector_scale: ["P4"]
+  projector_scale: ["P4"]  # Match pretrained checkpoint (P3=stride 8, P4=stride 16)
   out_feature_indexes: [3, 6, 9, 12]
   positional_encoding_size: 37
   group_detr: 13
@@ -82,7 +82,7 @@ data:
   # Background filtering (for sparse detection with many background patches)
   # 5:1 ratio = 5 background images for every 1 foreground image (~83% background)
   # Original dataset has 16.5:1 ratio (94% background) which is too high
-  background_ratio: 5
+  background_ratio: 1
   background_filter_seed: 42
 
   # Class names (6 species from HerdNet)
@@ -130,7 +130,7 @@ trainer:
 
   # Logging
   tensorboard: true
-  wandb: false
+  wandb: true
   project: animaldet
   run: ${experiment.name}
 
@@ -148,7 +148,7 @@ evaluator:
     f1_score:
       enabled: true
       center_threshold: 20.0  # Max distance in pixels for center-based matching (HerdNet standard)
-      score_threshold: 0.5    # Min confidence score for predictions
+      score_threshold: 0.4    # Min confidence score for predictions
       verbose: false          # Print detailed debug information
 
 # Integrations configuration

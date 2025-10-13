@@ -145,6 +145,7 @@ def load_ungulate_dataset(
             detection = fo.Detection(
                 label=str(int(row["labels"])),
                 bounding_box=[rel_x, rel_y, rel_w, rel_h],
+                confidence=row.get("scores", None),
             )
             detections.append(detection)
 
@@ -261,6 +262,7 @@ def load_herdnet_dataset(
                 detection = fo.Detection(
                     label=str(int(row["labels"])),
                     bounding_box=[rel_x, rel_y, rel_w, rel_h],
+                    confidence=row.get("scores", None),
                 )
                 detections.append(detection)
 
@@ -280,6 +282,7 @@ def load_herdnet_dataset(
                 keypoint = fo.Keypoint(
                     label=str(int(row["labels"])),
                     points=[(rel_x, rel_y)],
+                    confidence=row.get("scores", None),
                 )
                 keypoints.append(keypoint)
 

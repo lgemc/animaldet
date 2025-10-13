@@ -25,12 +25,12 @@ model:
   num_windows: 2
 
   # Decoder settings
-  dec_layers: 3
+  dec_layers: 4
   sa_nheads: 8
   ca_nheads: 16
   dec_n_points: 2
-  num_queries: 300
-  num_select: 300
+  num_queries: 50
+  num_select: 50
 
   # Architecture params
   projector_scale: ["P4"]
@@ -84,12 +84,12 @@ data:
 inference:
   name: RFDETRInference  # Inference registry name
   device: cuda  # Device for inference ('cuda' or 'cpu')
-  checkpoint_path: ./outputs/rfdetr/checkpoint_best_total_89.pth  # Path to trained model checkpoint
-  threshold: 0.5  # Detection confidence threshold (0.0-1.0)
+  checkpoint_path: ./outputs/rfdetr/checkpoint_epoch_9.pth  # Path to trained model checkpoint
+  threshold: 0.1
   batch_size: 4  # Batch size for patch inference (higher = faster but more memory)
   output_path: ./outputs/inference  # Output directory for inference results
-  detections_csv: rfdetr_detections.csv  # Output filename for detections
-  results_csv: rfdetr_scores.csv  # Output filename for metrics/results
+  detections_csv: rfdetr_detections_on_background_train.csv  # Output filename for detections
+  results_csv: rfdetr_scores_on_background_train.csv  # Output filename for metrics/results
 
 # Seed for reproducibility
 seed: 9292
