@@ -109,6 +109,18 @@ def parse_args() -> argparse.Namespace:
         help="JSON file or comma-separated list of class names (background excluded)",
     )
     parser.add_argument(
+        "--patch-size",
+        type=int,
+        default=512,
+        help="Sliding-window patch size used for validation stitcher",
+    )
+    parser.add_argument(
+        "--stitch-overlap",
+        type=int,
+        default=160,
+        help="Sliding-window overlap (pixels) for validation stitcher",
+    )
+    parser.add_argument(
         "--wandb-project",
         type=str,
         default=None,
@@ -200,6 +212,7 @@ def main() -> None:
     mean = tuple(checkpoint.get("mean", DEFAULT_MEAN))
     std = tuple(checkpoint.get("std", DEFAULT_STD))
     num_classes = len(class_map) + 1  # background + foreground classes
+    patch_size = args.patch_size
 
     model = HerdNet(
         num_classes=num_classes,
@@ -251,7 +264,12 @@ def main() -> None:
         MultiTransformsWrapper(
             [
                 FIDT(num_classes=num_classes, add_bg=False, down_ratio=2),
-                PointsToMask(radius=2, num_classes=num_classes, squeeze=True, down_ratio=32),
+                PointsToMask(
+                    radius=2,
+                    num_classes=num_classes,
+                    squeeze=True,
+                    down_ratio=int(patch_size // 16),
+                ),
             ]
         )
     ]
@@ -294,8 +312,8 @@ def main() -> None:
     metrics = PointsMetrics(radius=5, num_classes=num_classes)
     stitcher = HerdNetStitcher(
         model=model,
-        size=(512, 512),
-        overlap=160,
+        size=(patch_size, patch_size),
+        overlap=args.stitch_overlap,
         down_ratio=2,
         reduction="mean",
         up=False,
