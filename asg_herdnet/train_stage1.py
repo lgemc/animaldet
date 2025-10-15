@@ -110,6 +110,12 @@ def parse_args() -> argparse.Namespace:
         help="Training batch size",
     )
     parser.add_argument(
+        "--val-batch-size",
+        type=int,
+        default=1,
+        help="Validation batch size",
+    )
+    parser.add_argument(
         "--num-workers",
         type=int,
         default=4,
@@ -383,7 +389,7 @@ def main() -> None:
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=1,
+        batch_size=args.val_batch_size,
         shuffle=False,
         num_workers=args.num_workers,
         pin_memory=pin_memory,
@@ -483,6 +489,7 @@ def main() -> None:
         config={
             "stage": "stage1",
             "batch_size": args.batch_size,
+            "val_batch_size": args.val_batch_size,
             "epochs": args.epochs,
             "lr": 1e-4,
             "weight_decay": 5e-4,
