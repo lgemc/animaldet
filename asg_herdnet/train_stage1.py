@@ -104,16 +104,16 @@ def parse_args() -> argparse.Namespace:
         help="Number of training epochs",
     )
     parser.add_argument(
+        "--valid-freq",
+        type=int,
+        default=1,
+        help="Validate every N epochs (default: 1 = every epoch)",
+    )
+    parser.add_argument(
         "--batch-size",
         type=int,
         default=4,
         help="Training batch size",
-    )
-    parser.add_argument(
-        "--val-batch-size",
-        type=int,
-        default=1,
-        help="Validation batch size",
     )
     parser.add_argument(
         "--num-workers",
@@ -389,7 +389,7 @@ def main() -> None:
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=args.val_batch_size,
+        batch_size=1,  # Must be 1 for full-resolution validation images
         shuffle=False,
         num_workers=args.num_workers,
         pin_memory=pin_memory,
@@ -470,6 +470,7 @@ def main() -> None:
         evaluator=evaluator,
         work_dir=str(args.work_dir),
         print_freq=100,
+        valid_freq=args.valid_freq,
         device_name=device.type,
         auto_lr={
             "mode": "max",
@@ -489,7 +490,7 @@ def main() -> None:
         config={
             "stage": "stage1",
             "batch_size": args.batch_size,
-            "val_batch_size": args.val_batch_size,
+            "val_batch_size": 1,
             "epochs": args.epochs,
             "lr": 1e-4,
             "weight_decay": 5e-4,

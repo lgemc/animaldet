@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Stage 2 HerdNet training script (with Hard Negative Patches)."""
+"""Stage 2 HerdNet training script (with Hard Negative Patches).
+
+This script trains with original patches + HNPs using separate datasets
+concatenated together for full control and visibility.
+"""
 
 from __future__ import annotations
 
@@ -59,22 +63,26 @@ def parse_class_map(value: Optional[str]) -> dict[int, str]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Stage 2 HerdNet training (with HNP dataset)",
+        description="Stage 2 HerdNet training (original patches + HNPs)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--checkpoint", type=Path, required=True, help="Stage-1 checkpoint to load")
+    
+    # Training patches (original + HNPs merged)
     parser.add_argument(
-        "--hnp-root",
+        "--train-root",
         type=Path,
         required=True,
-        help="Merged patches directory (original patches + HNPs)",
+        help="Directory with training patches (original + HNPs merged)",
     )
     parser.add_argument(
         "--train-csv",
         type=Path,
         required=True,
-        help="Ground-truth CSV for patches (the original gt.csv)",
+        help="Ground-truth CSV for ORIGINAL patches only (HNPs not in CSV)",
     )
+    
+    # Validation
     parser.add_argument(
         "--val-csv",
         type=Path,
@@ -87,6 +95,7 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="Directory containing validation full images",
     )
+    
     parser.add_argument(
         "--work-dir",
         type=Path,
@@ -98,6 +107,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=50,
         help="Number of training epochs",
+    )
+    parser.add_argument(
+        "--valid-freq",
+        type=int,
+        default=1,
+        help="Validate every N epochs (default: 1 = every epoch)",
     )
     parser.add_argument("--batch-size", type=int, default=4, help="Training batch size")
     parser.add_argument("--num-workers", type=int, default=4, help="Dataloader workers")
@@ -274,12 +289,17 @@ def main() -> None:
         )
     ]
 
+    # Training dataset: FolderDataset automatically handles background patches
+    # Patches in train_root but NOT in train_csv are treated as background
     train_dataset = FolderDataset(
         csv_file=str(args.train_csv),
-        root_dir=str(args.hnp_root),
+        root_dir=str(args.train_root),
         albu_transforms=train_transforms,
         end_transforms=train_end_transforms,
     )
+    
+    print(f"[INFO] Total training samples: {len(train_dataset)}")
+    print(f"[INFO] (Includes original patches with GT + HNP patches as background)")
 
     val_dataset = CSVDataset(
         csv_file=str(args.val_csv),
@@ -300,7 +320,7 @@ def main() -> None:
     )
     val_loader = DataLoader(
         dataset=val_dataset,
-        batch_size=1,
+        batch_size=1,  # Must be 1 for full-resolution validation images
         shuffle=False,
         num_workers=args.num_workers,
         pin_memory=pin_memory,
@@ -317,6 +337,7 @@ def main() -> None:
         down_ratio=2,
         reduction="mean",
         up=False,
+        device_name=device.type,
     )
     evaluator = HerdNetEvaluator(
         model=model,
@@ -340,6 +361,7 @@ def main() -> None:
         evaluator=evaluator,
         work_dir=str(args.work_dir),
         print_freq=100,
+        valid_freq=args.valid_freq,
         device_name=device.type,
         auto_lr={
             "mode": "max",
@@ -359,10 +381,12 @@ def main() -> None:
         config={
             "stage": "stage2",
             "batch_size": args.batch_size,
+            "val_batch_size": 1,
             "epochs": args.epoch_count,
             "lr": args.lr,
             "num_workers": args.num_workers,
             "down_ratio": 2,
+            "total_patches": len(train_dataset),
         },
     )
 
