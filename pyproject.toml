@@ -1,0 +1,19 @@
+[project]
+name = "animaldet"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+herdnet = [
+    "animaloc",
+]
+rfdetr = [
+    "rfdetr",
+]
+
+[tool.uv.sources]
+animaloc = { git = "https://github.com/Alexandre-Delplanque/HerdNet" }
+rfdetr = { git = "https://github.com/roboflow/rf-detr" }
