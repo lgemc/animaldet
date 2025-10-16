@@ -273,6 +273,10 @@ def load_herdnet_dataset(
             # Add keypoints
             keypoints = []
             for _, row in group.iterrows():
+                # Skip rows with NaN labels
+                if pd.isna(row["labels"]):
+                    continue
+
                 x, y = row["x"], row["y"]
 
                 # Convert to relative coordinates
@@ -282,8 +286,10 @@ def load_herdnet_dataset(
                 keypoint = fo.Keypoint(
                     label=str(int(row["labels"])),
                     points=[(rel_x, rel_y)],
-                    confidence=row.get("scores", None),
                 )
+                # Set confidence after creation (must be a list of floats, one per point)
+                if "scores" in row and pd.notna(row["scores"]):
+                    keypoint.confidence = [float(row["scores"])]
                 keypoints.append(keypoint)
 
             # Use "predictions" field if ground truth is provided, otherwise "ground_truth"

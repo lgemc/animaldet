@@ -142,6 +142,7 @@ class PatchesBuffer:
         overlap: int = 0,
         column_mapping: Optional[dict] = None,
         save_all: bool = False,
+        min_visibility: float = 0.0,
     ):
         self.csv_path = csv_path
         self.images_root = images_root
@@ -149,6 +150,7 @@ class PatchesBuffer:
         self.overlap = overlap
         self.column_mapping = column_mapping
         self.save_all = save_all
+        self.min_visibility = min_visibility
 
         self._buffer = None
 
@@ -242,6 +244,15 @@ class PatchesBuffer:
 
                             # Check if there's any intersection
                             if intersect_x_min >= intersect_x_max or intersect_y_min >= intersect_y_max:
+                                continue
+
+                            # Calculate visibility fraction
+                            intersect_area = (intersect_x_max - intersect_x_min) * (intersect_y_max - intersect_y_min)
+                            ann_area = ann_bbox.area()
+                            visibility = intersect_area / ann_area if ann_area > 0 else 0
+
+                            # Skip if visibility is below threshold
+                            if visibility < self.min_visibility:
                                 continue
 
                             # Calculate relative bbox coordinates within patch

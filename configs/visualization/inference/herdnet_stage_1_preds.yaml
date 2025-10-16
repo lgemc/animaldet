@@ -1,0 +1,9 @@
+# Predictions over train set from stage 1 model, in order to get hard negatives for stage 2 training
+dataset_type: herdnet
+csv_path: outputs/herdnet_baseline/stage_1.csv
+gt_csv_path: data/herdnet/raw/groundtruth/csv/train_big_size_A_B_E_K_WH_WB.csv
+images_dir: data/herdnet/raw/train
+name: herdnet_inference_stage1
+persistent: false
+point_radius: 10
+database_uri: mongodb://localhost:27017

@@ -1,5 +1,5 @@
-# HerdNet-specific patcher configuration for big_size dataset (val)
-# Use this to prepare HerdNet validation patches from val_big_size_A_B_E_K_WH_WB.csv format
+# HerdNet-specific patcher configuration for big_size dataset (train)
+# Use this to prepare HerdNet training patches from train_big_size_A_B_E_K_WH_WB.csv format
 
 # @package _global_
 
@@ -11,9 +11,9 @@ patch_size: 512
 overlap: 160  # Recommended overlap for stitching
 
 # Paths for HerdNet dataset
-images_root: ${oc.env:DATA_DIR,./data}/herdnet/raw/val
-dest_dir: ${oc.env:DATA_DIR,./data}/herdnet/processed/512/ma
-csv_path: ${oc.env:DATA_DIR,./data}/herdnet/raw/groundtruth/csv/val_big_size_A_B_E_K_WH_WB.csv
+images_root: ${oc.env:DATA_DIR,./data}/herdnet/raw/test
+dest_dir: ${oc.env:DATA_DIR,./data}/herdnet/processed/512/test
+csv_path: ${oc.env:DATA_DIR,./data}/herdnet/raw/groundtruth/csv/test_big_size_A_B_E_K_WH_WB.csv
 
 save_all: false  # Only save patches with annotations
 
