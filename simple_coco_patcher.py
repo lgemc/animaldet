@@ -116,6 +116,8 @@ def create_patches_and_annotations(images_dir, json_file, output_dir,
     
     # Crear estructura para nuevo COCO JSON
     new_coco = {
+        'info': coco_data.get('info', []),
+        'licenses': coco_data.get('licenses', []),
         'images': [],
         'annotations': [],
         'categories': coco_data.get('categories', [])
