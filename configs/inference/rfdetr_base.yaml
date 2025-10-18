@@ -1,0 +1,95 @@
+# RF-DETR Inference Configuration
+# This config is used for running inference with trained RF-DETR models on large images
+
+# Model type (used by unified inference system)
+model_type: rfdetr
+
+# Experiment metadata
+experiment:
+  name: rfdetr_inference_test
+  tags:
+    - rfdetr
+    - inference
+    - test
+
+# Model configuration (must match training config)
+model:
+  variant: base  # nano, small, medium, base, or large
+  num_classes: 6  # Number of animal classes (no background class for RF-DETR)
+  resolution: 560  # Model input resolution (patches will be 560x560)
+
+  # Encoder settings
+  encoder: dinov2_windowed_small
+  hidden_dim: 256
+  patch_size: 14
+  num_windows: 2
+
+  # Decoder settings
+  dec_layers: 3
+  sa_nheads: 8
+  ca_nheads: 16
+  dec_n_points: 2
+  num_queries: 300
+  num_select: 300
+
+  # Architecture params
+  projector_scale: ["P4"]
+  out_feature_indexes: [2, 5, 8, 11]
+  positional_encoding_size: null  # Use default from variant
+  group_detr: 13
+
+  # Training settings
+  two_stage: true
+  bbox_reparam: true
+  lite_refpoint_refine: true
+  layer_norm: true
+  amp: true
+  gradient_checkpointing: false
+
+  # Loss settings (not used for inference but needed for config)
+  ia_bce_loss: true
+  cls_loss_coef: 1.0
+  bbox_loss_coef: 5.0
+  giou_loss_coef: 2.0
+  aux_loss: true
+
+  # Pretrained weights
+  pretrain_weights: null
+  device: cuda
+
+# Dataset configuration (for loading images)
+data:
+  # Dataset paths
+  dataset_file: coco  # Format of annotations
+  dataset_dir: data/herdnet/raw
+  test_csv: data/herdnet/raw/groundtruth/csv/test_big_size_A_B_E_K_WH_WB.csv
+  test_root: data/herdnet/raw/test
+
+  # Data augmentation (disabled for inference)
+  multi_scale: false
+  expanded_scales: false
+  do_random_resize_via_padding: false
+  square_resize_div_64: false
+
+  # Class names (optional)
+  class_names:
+    - cattle
+    - sheep
+    - horse
+    - wild_boar
+    - deer
+    - other
+
+# Inference configuration
+inference:
+  name: RFDETRInference  # Inference registry name
+  device: cuda  # Device for inference ('cuda' or 'cpu')
+  checkpoint_path: ./outputs/rfdetr/checkpoint_best_ema.pth  # Path to trained model checkpoint
+  threshold: 0.25  # Detection confidence threshold (0.0-1.0)
+  batch_size: 4  # Batch size for patch inference (higher = faster but more memory)
+  output_path: ./outputs/inference  # Output directory for inference results
+  detections_csv: rfdetr_detections.csv  # Output filename for detections
+  results_csv: rfdetr_scores.csv  # Output filename for metrics/results
+
+# Seed for reproducibility
+seed: 9292

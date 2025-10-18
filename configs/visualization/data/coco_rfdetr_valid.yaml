@@ -1,0 +1,5 @@
+dataset_type: coco
+data_path: data/rfdetr/560/valid/
+labels_path: data/rfdetr/560/valid/_annotations.coco.json
+name: rfdetr_valid_560
+persistent: false

@@ -34,8 +34,8 @@ model:
 
   # Architecture params
   projector_scale: ["P4"]
-  out_feature_indexes: [2, 5, 8, 11]
-  positional_encoding_size: null  # Use default from variant
+  out_feature_indexes: [3, 6, 9, 12]
+  positional_encoding_size: 37
   group_detr: 13
 
   # Training settings
@@ -84,8 +84,8 @@ data:
 inference:
   name: RFDETRInference  # Inference registry name
   device: cuda  # Device for inference ('cuda' or 'cpu')
-  checkpoint_path: ./outputs/rfdetr/checkpoint_best_total_89.pth  # Path to trained model checkpoint
-  threshold: 0.5  # Detection confidence threshold (0.0-1.0)
+  checkpoint_path: ./output/rfdetr_hnp/checkpoint_epoch_49.pth # Path to trained model checkpoint
+  threshold: 0.3  # Detection confidence threshold (0.0-1.0)
   batch_size: 4  # Batch size for patch inference (higher = faster but more memory)
   output_path: ./outputs/inference  # Output directory for inference results
   detections_csv: rfdetr_detections.csv  # Output filename for detections

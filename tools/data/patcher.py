@@ -16,6 +16,7 @@ def patcher_main(
     overlap: int,
     csv_path: Optional[str],
     save_all: bool,
+    min_bbox_size_ratio: float = 0.0,
 ):
     """Main patcher function.
 
@@ -27,6 +28,7 @@ def patcher_main(
         overlap: Overlap between patches in pixels
         csv_path: Path to CSV file with annotations
         save_all: Save all patches including those without annotations
+        min_bbox_size_ratio: Minimum ratio of bbox area to original bbox area (0.0-1.0)
     """
     # Load config if provided
     if config:
@@ -49,6 +51,7 @@ def patcher_main(
         overlap = cfg.get("overlap", overlap)
         csv_path = cfg.get("csv_path", None)
         save_all = cfg.get("save_all", save_all)
+        min_bbox_size_ratio = cfg.get("min_bbox_size_ratio", min_bbox_size_ratio)
         column_mapping = cfg.get("column_mapping", None)
     else:
         # Use CLI arguments only
@@ -68,6 +71,7 @@ def patcher_main(
     print(f"overlap: {overlap}")
     print(f"csv_path: {csv_path}")
     print(f"save_all: {save_all}")
+    print(f"min_bbox_size_ratio: {min_bbox_size_ratio}")
     print("=" * 80)
 
     # Validate paths
@@ -91,6 +95,7 @@ def patcher_main(
         csv_path=csv_path,
         save_all=save_all,
         column_mapping=column_mapping,
+        min_bbox_size_ratio=min_bbox_size_ratio,
     )
 
     print(f"\n✓ Patches extracted successfully to: {dest_dir}")

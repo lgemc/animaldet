@@ -1,14 +1,15 @@
-# RF-DETR Experiment Configuration
-# Real-time transformer-based object detection
+# RF-DETR Experiment Configuration with Hard Negative Patches (HNP)
+# Real-time transformer-based object detection with background images for better FP handling
 
 # Experiment metadata
 experiment:
-  name: rfdetr_finetune
+  name: rfdetr_finetune_hnp
   tags:
     - rfdetr
     - transformer
     - detection
     - finetune
+    - hard-negatives
 
 # Random seed for reproducibility
 seed: 9292
@@ -30,7 +31,7 @@ model:
   hidden_dim: 256
   patch_size: 14
   num_windows: 2
-  dec_layers: 4
+  dec_layers: 3
   sa_nheads: 8
   ca_nheads: 16
   dec_n_points: 2
@@ -70,8 +71,17 @@ data:
   dataset_dir: ${oc.env:DATA_DIR,./data}/rfdetr/560
 
   # For COCO format, specify annotation files
-  train_annotation: annotations/instances_train2017.json
+  # Using annotation file that includes ALL images (with and without annotations)
+  # This enables training with background images similar to HerdNet's approach
+  train_annotation: annotations/instances_train_plus_hnp2017.json
   val_annotation: annotations/instances_val2017.json
+
+  # Background filtering (for sparse detection datasets with hard negative patches)
+  # This controls the ratio of background:foreground images in training
+  # Set to 1.0 for 1:1 ratio (equal background and foreground images)
+  # Set to null to use ALL images without filtering
+  background_ratio: 1.0
+  background_filter_seed: 42  # Random seed for reproducible background sampling
 
   # Data augmentation settings
   multi_scale: true  # Multi-scale training
@@ -85,8 +95,8 @@ data:
 # Optimizer configuration
 optimizer:
   lr: 1.0e-6  # Base learning rate
-  lr_encoder: 1.0e-6  # Encoder learning rate (usually higher)
-  weight_decay: 1.0e-4
+  lr_encoder: 1.0e-6 # Encoder learning rate (usually higher)
+  weight_decay: 1.0e-6
 
   # Learning rate decay strategies
   lr_vit_layer_decay: 0.8  # Layer-wise LR decay for ViT
@@ -105,7 +115,7 @@ trainer:
   # Training duration
   epochs: 50
   batch_size: 8
-  grad_accum_steps: 4  # Gradient accumulation for larger effective batch size
+  grad_accum_steps: 2  # Gradient accumulation for larger effective batch size
   num_workers: 2
 
   # Learning rate schedule
@@ -114,7 +124,7 @@ trainer:
 
   # Checkpointing
   checkpoint_interval: 1  # Save checkpoint every N epochs
-  work_dir: ./output/rfdetr
+  work_dir: ./output/rfdetr_hnp
 
   # Early stopping
   early_stopping: false
@@ -156,4 +166,4 @@ integrations:
     name: ${experiment.name}
     tags: ${experiment.tags}
     project: ${trainer.project}
-    notes: RF-DETR experiment for real-time object detection
+    notes: RF-DETR experiment with hard negative patches (background images) for improved false positive handling

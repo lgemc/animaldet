@@ -6,7 +6,7 @@ from typing import Optional
 
 from omegaconf import OmegaConf
 
-from animaldet.visualization import load_herdnet_dataset, load_ungulate_dataset
+from animaldet.visualization import load_herdnet_dataset, load_ungulate_dataset, load_coco_dataset
 
 
 def visualize_main(
@@ -25,10 +25,10 @@ def visualize_main(
 
     Args:
         config: Path to configuration file
-        dataset_type: Dataset type (ungulate or herdnet)
-        csv_path: Path to CSV file with annotations
-        gt_csv_path: Path to CSV file with ground truth annotations (optional)
-        images_dir: Directory containing images
+        dataset_type: Dataset type (ungulate, herdnet, or coco)
+        csv_path: Path to CSV file with annotations (for ungulate/herdnet)
+        gt_csv_path: Path to CSV file with ground truth annotations (optional, for herdnet)
+        images_dir: Directory containing images (for ungulate/herdnet)
         name: Dataset name in FiftyOne
         persistent: Persist dataset to FiftyOne database
         port: Port for FiftyOne app
@@ -39,13 +39,17 @@ def visualize_main(
     if config:
         cfg = OmegaConf.load(config)
         dataset_type = dataset_type or cfg.dataset_type
-        csv_path = csv_path or cfg.csv_path
+        csv_path = csv_path or cfg.get("csv_path", None)
         gt_csv_path = gt_csv_path or cfg.get("gt_csv_path", None)
-        images_dir = images_dir or cfg.images_dir
+        images_dir = images_dir or cfg.get("images_dir", None)
         name = cfg.get("name", name)
         persistent = cfg.get("persistent", persistent)
         database_uri = cfg.get("database_uri", None)
         max_samples = max_samples or cfg.get("max_samples", None)
+
+        # COCO-specific fields
+        data_path = cfg.get("data_path", None)
+        labels_path = cfg.get("labels_path", None)
     else:
         # Use CLI arguments
         if not dataset_type or not csv_path or not images_dir:
@@ -53,6 +57,8 @@ def visualize_main(
                 "--dataset-type, --csv-path, and --images-dir are required when --config is not provided"
             )
         database_uri = None
+        data_path = None
+        labels_path = None
 
     # Set database URI as environment variable BEFORE importing fiftyone
     # This ensures it's picked up during initialization
@@ -63,34 +69,53 @@ def visualize_main(
     # Import fiftyone AFTER setting environment variable
     import fiftyone as fo
 
-    # Convert to absolute paths
-    csv_path = Path(csv_path).absolute()
-    images_dir = Path(images_dir).absolute()
+    # Load dataset based on type
+    if dataset_type == "coco":
+        # COCO format uses data_path and labels_path instead
+        if not data_path or not labels_path:
+            raise ValueError("COCO format requires 'data_path' and 'labels_path' in config")
 
-    # Load dataset
-    print(f"Loading {dataset_type} dataset from {csv_path}")
-    if max_samples:
-        print(f"Limiting to {max_samples} samples for debugging")
-    if dataset_type == "ungulate":
-        dataset = load_ungulate_dataset(
-            csv_path=csv_path,
-            images_dir=images_dir,
+        print(f"Loading COCO dataset from {labels_path}")
+        dataset = load_coco_dataset(
+            data_path=data_path,
+            labels_path=labels_path,
             name=name,
             persistent=persistent,
             database_uri=database_uri,
-            max_samples=max_samples,
-        )
-    elif dataset_type == "herdnet":
-        dataset = load_herdnet_dataset(
-            csv_path=csv_path,
-            images_dir=images_dir,
-            name=name,
-            persistent=persistent,
-            database_uri=database_uri,
-            gt_csv_path=gt_csv_path,
         )
     else:
-        raise ValueError(f"Unknown dataset type: {dataset_type}")
+        # CSV-based formats (ungulate, herdnet)
+        if not csv_path or not images_dir:
+            raise ValueError(f"{dataset_type} format requires 'csv_path' and 'images_dir'")
+
+        # Convert to absolute paths
+        csv_path = Path(csv_path).absolute()
+        images_dir = Path(images_dir).absolute()
+
+        print(f"Loading {dataset_type} dataset from {csv_path}")
+        if max_samples:
+            print(f"Limiting to {max_samples} samples for debugging")
+
+        if dataset_type == "ungulate":
+            dataset = load_ungulate_dataset(
+                csv_path=csv_path,
+                images_dir=images_dir,
+                name=name,
+                persistent=persistent,
+                database_uri=database_uri,
+                max_samples=max_samples,
+            )
+        elif dataset_type == "herdnet":
+            dataset = load_herdnet_dataset(
+                csv_path=csv_path,
+                images_dir=images_dir,
+                name=name,
+                persistent=persistent,
+                database_uri=database_uri,
+                gt_csv_path=gt_csv_path,
+            )
+        else:
+            raise ValueError(f"Unknown dataset type: {dataset_type}")
 
     # Launch FiftyOne app
     print(f"\nLaunching FiftyOne app on port {port}...")

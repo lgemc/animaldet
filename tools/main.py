@@ -59,6 +59,7 @@ def patcher(
     overlap: Annotated[int, typer.Option("--overlap", help="Overlap between patches in pixels")] = 0,
     csv_path: Annotated[str, typer.Option("--csv-path", help="Path to CSV file with annotations")] = None,
     save_all: Annotated[bool, typer.Option("--save-all", help="Save all patches including those without annotations")] = False,
+    min_bbox_size_ratio: Annotated[float, typer.Option("--min-bbox-size-ratio", help="Minimum ratio of bbox area to original bbox area (0.0-1.0). Filters out patches where animals are smaller than this ratio of their original size.")] = 0.0,
 ):
     """Extract patches from images using configuration or CLI arguments."""
     from tools.data.patcher import patcher_main
@@ -71,6 +72,7 @@ def patcher(
         overlap=overlap,
         csv_path=csv_path,
         save_all=save_all,
+        min_bbox_size_ratio=min_bbox_size_ratio,
     )
 
 

@@ -132,6 +132,9 @@ class PatchesBuffer:
         column_mapping: Optional dict to map CSV columns to standard format
                        Example: {'Image': 'images', 'x1': 'x_min', 'y1': 'y_min',
                                 'x2': 'x_max', 'y2': 'y_max', 'Label': 'labels'}
+        save_all: If True, save all patches; if False, only annotated ones
+        min_visibility: Minimum visibility fraction (0.0-1.0) for an annotation to be included
+        min_bbox_size_ratio: Minimum ratio of bbox area in patch to original bbox area (0.0-1.0)
     """
 
     def __init__(
@@ -143,6 +146,7 @@ class PatchesBuffer:
         column_mapping: Optional[dict] = None,
         save_all: bool = False,
         min_visibility: float = 0.0,
+        min_bbox_size_ratio: float = 0.0,
     ):
         self.csv_path = csv_path
         self.images_root = images_root
@@ -151,6 +155,7 @@ class PatchesBuffer:
         self.column_mapping = column_mapping
         self.save_all = save_all
         self.min_visibility = min_visibility
+        self.min_bbox_size_ratio = min_bbox_size_ratio
 
         self._buffer = None
 
@@ -260,6 +265,13 @@ class PatchesBuffer:
                             rel_y_min = max(0, ann_y_min - y)
                             rel_x_max = min(self.patch_width, ann_x_max - x)
                             rel_y_max = min(self.patch_height, ann_y_max - y)
+
+                            # Check bbox size ratio if threshold is set
+                            if self.min_bbox_size_ratio > 0:
+                                patch_bbox_area = (rel_x_max - rel_x_min) * (rel_y_max - rel_y_min)
+                                bbox_size_ratio = patch_bbox_area / ann_area if ann_area > 0 else 0
+                                if bbox_size_ratio < self.min_bbox_size_ratio:
+                                    continue
                         else:
                             # Point format
                             ann_x, ann_y = row['x'], row['y']
@@ -372,6 +384,7 @@ def extract_patches(
     csv_path: Optional[str] = None,
     save_all: bool = False,
     column_mapping: Optional[dict] = None,
+    min_bbox_size_ratio: float = 0.0,
 ) -> None:
     """
     Extract patches from images in a directory.
@@ -384,6 +397,7 @@ def extract_patches(
         csv_path: Optional path to CSV with annotations
         save_all: If True, save all patches; if False, only annotated ones
         column_mapping: Optional dict to map CSV columns to standard format
+        min_bbox_size_ratio: Minimum ratio of bbox area to original bbox area (0.0-1.0)
     """
     os.makedirs(dest_dir, exist_ok=True)
 
@@ -398,13 +412,13 @@ def extract_patches(
     if csv_path is not None:
         # Create patches buffer with annotations
         patches_buffer = PatchesBuffer(
-            csv_path, images_root, patch_size, overlap, column_mapping, save_all
+            csv_path, images_root, patch_size, overlap, column_mapping, save_all,
+            min_visibility=0.0, min_bbox_size_ratio=min_bbox_size_ratio
         ).buffer
 
-        # Save updated annotations
-        patches_buffer.drop(columns='limits').to_csv(
-            os.path.join(dest_dir, 'gt.csv'), index=False
-        )
+        # Save updated annotations (drop limits column if it exists)
+        save_df = patches_buffer.drop(columns='limits') if 'limits' in patches_buffer.columns else patches_buffer
+        save_df.to_csv(os.path.join(dest_dir, 'gt.csv'), index=False)
 
         if not save_all:
             # Only process images with annotations

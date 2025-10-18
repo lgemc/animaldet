@@ -8,6 +8,51 @@ import fiftyone as fo
 import pandas as pd
 
 
+def load_coco_dataset(
+    data_path: str | Path,
+    labels_path: str | Path,
+    name: str = "coco",
+    persistent: bool = False,
+    database_uri: Optional[str] = None,
+) -> fo.Dataset:
+    """Load COCO format dataset into FiftyOne.
+
+    Args:
+        data_path: Directory containing the images
+        labels_path: Path to COCO format JSON file with annotations
+        name: Dataset name in FiftyOne
+        persistent: Whether to persist dataset to database
+        database_uri: MongoDB connection URI (e.g., mongodb://localhost:27017)
+
+    Returns:
+        FiftyOne dataset with COCO detections
+    """
+    # Configure database URI if provided
+    if database_uri:
+        fo.config.database_uri = database_uri
+
+    data_path = Path(data_path)
+    labels_path = Path(labels_path)
+
+    # Delete existing dataset if it exists (force fresh load)
+    if fo.dataset_exists(name):
+        print(f"Deleting existing dataset '{name}' to force reload")
+        fo.delete_dataset(name)
+
+    # Load COCO dataset using FiftyOne's built-in loader
+    dataset = fo.Dataset.from_dir(
+        dataset_type=fo.types.COCODetectionDataset,
+        data_path=str(data_path),
+        labels_path=str(labels_path),
+        name=name,
+    )
+
+    dataset.persistent = persistent
+
+    print(f"Loaded {len(dataset)} images from COCO dataset")
+    return dataset
+
+
 def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize column names to a standard format.
 
@@ -47,11 +92,13 @@ def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
 
     # RF-DETR bbox format: x, y, x_max, y_max -> x_min, y_min, x_max, y_max
     # (x, y are top-left corner, not center points)
+    # Only rename if x_min and y_min don't already exist
     elif 'x' in columns and 'y' in columns and 'x_max' in columns and 'y_max' in columns:
-        df.rename(columns={
-            'x': 'x_min',
-            'y': 'y_min'
-        }, inplace=True)
+        if 'x_min' not in columns and 'y_min' not in columns:
+            df.rename(columns={
+                'x': 'x_min',
+                'y': 'y_min'
+            }, inplace=True)
 
     return df
 
@@ -89,6 +136,7 @@ def load_ungulate_dataset(
     # Read CSV with bbox annotations
     df = pd.read_csv(csv_path)
     df = normalize_column_names(df)
+    has_scores = 'scores' in df.columns
 
     # Delete existing dataset if it exists (force fresh load)
     if fo.dataset_exists(name):
@@ -145,7 +193,7 @@ def load_ungulate_dataset(
             detection = fo.Detection(
                 label=str(int(row["labels"])),
                 bounding_box=[rel_x, rel_y, rel_w, rel_h],
-                confidence=row.get("scores", None),
+                confidence=float(row["scores"]) if has_scores and pd.notna(row["scores"]) else None,
             )
             detections.append(detection)
 
@@ -214,6 +262,7 @@ def load_herdnet_dataset(
     # Detect if we have bboxes or points in predictions
     has_bboxes = all(col in df.columns for col in ['x_min', 'y_min', 'x_max', 'y_max'])
     has_points = 'x' in df.columns and 'y' in df.columns
+    has_scores = 'scores' in df.columns
 
     # Detect if ground truth has bboxes or points
     gt_has_bboxes = False
@@ -262,7 +311,7 @@ def load_herdnet_dataset(
                 detection = fo.Detection(
                     label=str(int(row["labels"])),
                     bounding_box=[rel_x, rel_y, rel_w, rel_h],
-                    confidence=row.get("scores", None),
+                    confidence=float(row["scores"]) if has_scores and pd.notna(row["scores"]) else None,
                 )
                 detections.append(detection)
 
@@ -288,7 +337,7 @@ def load_herdnet_dataset(
                     points=[(rel_x, rel_y)],
                 )
                 # Set confidence after creation (must be a list of floats, one per point)
-                if "scores" in row and pd.notna(row["scores"]):
+                if has_scores and pd.notna(row["scores"]):
                     keypoint.confidence = [float(row["scores"])]
                 keypoints.append(keypoint)
 
