@@ -1,0 +1,26 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Kubernetes
+*.kubeconfig
+secrets.yaml
+*-secret.yaml
+
+# Ansible
+*.retry
+.vault_pass
+hosts.ini
+
+# Scripts
+*.log
+
