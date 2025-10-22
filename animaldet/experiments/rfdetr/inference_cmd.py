@@ -116,8 +116,7 @@ def inference_main(
 
     # Build and load model
     logger.info(f"Building RF-DETR model...")
-    model = build_model(cfg.model, device=str(actual_device))
-    model = load_checkpoint(model, str(checkpoint_path))
+    model = build_model(cfg.model, device=str(actual_device), checkpoint_path=str(checkpoint_path))
     model = model.to(actual_device)
     model.eval()
 
@@ -150,11 +149,12 @@ def inference_main(
     stitcher = RFDETRStitcher(
         model=model,
         size=(cfg.model.resolution, cfg.model.resolution),
-        overlap=0,  # Non-overlapping patches
+        overlap=160,
         batch_size=cfg.inference.batch_size,
         confidence_threshold=cfg.inference.threshold,
         nms_threshold=cfg.evaluator.nms_threshold,
         device_name=str(actual_device),
+        voting_threshold=0.5,
     )
 
     # Create transforms for preprocessing

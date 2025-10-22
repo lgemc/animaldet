@@ -20,6 +20,7 @@ def visualize_main(
     port: int,
     remote: bool,
     max_samples: Optional[int],
+    grid_size: Optional[int],
 ):
     """Launch FiftyOne visualization for animaldet datasets.
 
@@ -34,6 +35,7 @@ def visualize_main(
         port: Port for FiftyOne app
         remote: Launch in remote mode (for SSH sessions)
         max_samples: Maximum number of samples to load (for debugging)
+        grid_size: Size of grid squares in pixels (e.g., 560) to overlay on images
     """
     # Load config if provided
     if config:
@@ -46,6 +48,7 @@ def visualize_main(
         persistent = cfg.get("persistent", persistent)
         database_uri = cfg.get("database_uri", None)
         max_samples = max_samples or cfg.get("max_samples", None)
+        grid_size = grid_size or cfg.get("grid_size", None)
 
         # COCO-specific fields
         data_path = cfg.get("data_path", None)
@@ -104,6 +107,7 @@ def visualize_main(
                 persistent=persistent,
                 database_uri=database_uri,
                 max_samples=max_samples,
+                grid_size=grid_size,
             )
         elif dataset_type == "herdnet":
             dataset = load_herdnet_dataset(
@@ -113,6 +117,7 @@ def visualize_main(
                 persistent=persistent,
                 database_uri=database_uri,
                 gt_csv_path=gt_csv_path,
+                grid_size=grid_size,
             )
         else:
             raise ValueError(f"Unknown dataset type: {dataset_type}")

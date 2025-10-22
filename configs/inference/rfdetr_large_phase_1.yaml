@@ -14,46 +14,9 @@ experiment:
 
 # Model configuration (must match training config)
 model:
-  variant: base  # nano, small, medium, base, or large
+  variant: large  # nano, small, medium, base, or large
   num_classes: 6  # Number of animal classes (no background class for RF-DETR)
   resolution: 560  # Model input resolution (patches will be 560x560)
-
-  # Encoder settings
-  encoder: dinov2_windowed_small
-  hidden_dim: 256
-  patch_size: 14
-  num_windows: 2
-
-  # Decoder settings
-  dec_layers: 3
-  sa_nheads: 8
-  ca_nheads: 16
-  dec_n_points: 2
-  num_queries: 70
-  num_select: 70
-
-  # Architecture params
-  projector_scale: ["P4"]
-  out_feature_indexes: [2, 5, 8, 11]
-  positional_encoding_size: null  # Use default from variant
-  group_detr: 13
-
-  # Training settings
-  two_stage: true
-  bbox_reparam: true
-  lite_refpoint_refine: true
-  layer_norm: true
-  amp: true
-  gradient_checkpointing: false
-
-  # Loss settings (not used for inference but needed for config)
-  ia_bce_loss: true
-  cls_loss_coef: 1.0
-  bbox_loss_coef: 5.0
-  giou_loss_coef: 2.0
-  aux_loss: true
-
-  # Pretrained weights
   pretrain_weights: null
   device: cuda
 
@@ -62,8 +25,8 @@ data:
   # Dataset paths
   dataset_file: coco  # Format of annotations
   dataset_dir: data/herdnet/raw
-  test_csv: data/herdnet/raw/groundtruth/csv/val_big_size_A_B_E_K_WH_WB.csv
-  test_root: data/herdnet/raw/val
+  test_csv: data/herdnet/raw/groundtruth/csv/test_big_size_A_B_E_K_WH_WB.csv
+  test_root: data/herdnet/raw/test
 
   # Data augmentation (disabled for inference)
   multi_scale: false
@@ -84,12 +47,12 @@ data:
 inference:
   name: RFDETRInference  # Inference registry name
   device: cuda  # Device for inference ('cuda' or 'cpu')
-  checkpoint_path: ./outputs/rfdetr/checkpoint_background_included.pth  # Path to trained model checkpoint
-  threshold: 0.25  # Detection confidence threshold (0.0-1.0)
+  checkpoint_path: ./outputs/rfdetr/large/checkpoint.pth # Path to trained model checkpoint
+  threshold: 0.3  # Detection confidence threshold (0.0-1.0)
   batch_size: 4  # Batch size for patch inference (higher = faster but more memory)
   output_path: ./outputs/inference  # Output directory for inference results
-  detections_csv: rfdetr_detections_background_included.csv  # Output filename for detections
-  results_csv: rfdetr_scores_background_included.csv  # Output filename for metrics/results
+  detections_csv: rfdetr_detections_large_train.csv  # Output filename for detections
+  results_csv: rfdetr_scores_large_train.csv  # Output filename for metrics/results
 
 # Seed for reproducibility
 seed: 9292

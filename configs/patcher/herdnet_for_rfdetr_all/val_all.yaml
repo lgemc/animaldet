@@ -1,0 +1,28 @@
+# HerdNet-specific patcher configuration for big_size dataset (val) - ALL PATCHES
+# Use this to prepare HerdNet validation patches from val_big_size_A_B_E_K_WH_WB.csv format
+# Includes background patches for better false positive handling
+
+# @package _global_
+
+defaults:
+  - ../default
+
+# HerdNet patch configuration
+patch_size: 560
+overlap: false
+
+# Paths for HerdNet dataset
+images_root: ${oc.env:DATA_DIR,./data}/herdnet/raw/val
+dest_dir: ${oc.env:DATA_DIR,./data}/herdnet/processed/560_all/val
+csv_path: ${oc.env:DATA_DIR,./data}/herdnet/raw/groundtruth/csv/val_big_size_A_B_E_K_WH_WB.csv
+
+save_all: true  # Save ALL patches including background (no annotations)
+min_bbox_size_ratio: 0.3
+# Column mapping for HerdNet big_size CSV format (Image, x1, y1, x2, y2, Label)
+column_mapping:
+  Image: images
+  x1: x_min
+  y1: y_min
+  x2: x_max
+  y2: y_max
+  Label: labels

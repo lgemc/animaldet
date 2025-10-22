@@ -1,0 +1,28 @@
+# HerdNet-specific patcher configuration for big_size dataset (train) - ALL PATCHES
+# Use this to prepare HerdNet training patches from train_big_size_A_B_E_K_WH_WB.csv format
+# Includes background patches for better false positive handling
+
+# @package _global_
+
+defaults:
+  - ../default
+
+# HerdNet patch configuration
+patch_size: 560
+overlap: 160  # Recommended overlap for stitching
+
+# Paths for HerdNet dataset
+images_root: ${oc.env:DATA_DIR,./data}/herdnet/raw/train
+dest_dir: ${oc.env:DATA_DIR,./data}/herdnet/processed/560_all/hnp_large
+csv_path: outputs/inference/rfdetr_detections_large_train.csv
+
+save_all: false  # Save ALL patches including background (no annotations)
+
+# Column mapping for HerdNet big_size CSV format (Image, x1, y1, x2, y2, Label)
+column_mapping:
+  images: images
+  x_min: x_min
+  y_min: y_min
+  x_max: x_max
+  y_max: y_max
+  labels: labels

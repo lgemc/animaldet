@@ -31,9 +31,9 @@ from animaloc.data import ImageToPatches
 class RFDETRStitcher(ImageToPatches):
     """Stitcher for RF-DETR to handle large images.
 
-    This class divides large images into non-overlapping patches at the model's
-    expected resolution (560x560), runs inference on each patch, and rescales
-    the bounding box predictions back to the original image coordinates.
+    This class divides large images into patches at the model's expected resolution,
+    runs inference on each patch, and rescales the bounding box predictions back to
+    the original image coordinates. Supports voting-based filtering for overlapping patches.
 
     Args:
         model: RF-DETR model instance (PyTorch nn.Module)
@@ -43,6 +43,8 @@ class RFDETRStitcher(ImageToPatches):
         confidence_threshold: Minimum confidence score for detections (default: 0.5)
         nms_threshold: IoU threshold for non-maximum suppression (default: 0.45)
         device_name: Device for inference ('cuda' or 'cpu')
+        voting_threshold: Minimum fraction of overlapping patches that must agree on a
+            detection for it to be kept (default: 0.5, i.e., majority vote)
     """
 
     def __init__(
@@ -54,6 +56,7 @@ class RFDETRStitcher(ImageToPatches):
         confidence_threshold: float = 0.5,
         nms_threshold: float = 0.45,
         device_name: str = "cuda",
+        voting_threshold: float = 0.5,
     ) -> None:
         assert isinstance(model, torch.nn.Module), \
             "model argument must be an instance of nn.Module()"
@@ -64,6 +67,7 @@ class RFDETRStitcher(ImageToPatches):
         self.batch_size = batch_size
         self.confidence_threshold = confidence_threshold
         self.nms_threshold = nms_threshold
+        self.voting_threshold = voting_threshold
 
         # Get device using centralized utility
         self.device = get_device(device_name, verbose=False)
@@ -96,6 +100,10 @@ class RFDETRStitcher(ImageToPatches):
 
         # Step 3: Rescale detections to original image coordinates
         stitched_detections = self._stitch_detections(patch_detections)
+
+        # Step 3.5: Apply voting to filter detections based on patch agreement
+        if self.overlap > 0:
+            stitched_detections = self._apply_voting(stitched_detections)
 
         # Step 4: Apply NMS to remove duplicates at patch boundaries
         final_detections = self._apply_nms(stitched_detections)
@@ -194,11 +202,12 @@ class RFDETRStitcher(ImageToPatches):
         all_boxes = []
         all_scores = []
         all_labels = []
+        all_patch_ids = []
 
         # Get patch limits (locations in original image)
         limits = self.get_limits()
 
-        for detection, (_, limit) in zip(patch_detections, limits.items()):
+        for patch_idx, (detection, (_, limit)) in enumerate(zip(patch_detections, limits.items())):
             if detection['boxes'].shape[0] == 0:
                 continue
 
@@ -214,20 +223,118 @@ class RFDETRStitcher(ImageToPatches):
             all_boxes.append(boxes)
             all_scores.append(detection['scores'])
             all_labels.append(detection['labels'])
+            all_patch_ids.append(torch.full((len(boxes),), patch_idx, dtype=torch.long))
 
         if len(all_boxes) == 0:
             # No detections
             return {
                 'boxes': torch.empty((0, 4)),
                 'scores': torch.empty(0),
-                'labels': torch.empty(0, dtype=torch.long)
+                'labels': torch.empty(0, dtype=torch.long),
+                'patch_ids': torch.empty(0, dtype=torch.long)
             }
 
         return {
             'boxes': torch.cat(all_boxes, dim=0),
             'scores': torch.cat(all_scores, dim=0),
-            'labels': torch.cat(all_labels, dim=0)
+            'labels': torch.cat(all_labels, dim=0),
+            'patch_ids': torch.cat(all_patch_ids, dim=0)
         }
+
+    def _apply_voting(
+        self,
+        detections: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
+        """Filter detections based on voting from overlapping patches.
+
+        Groups overlapping detections and keeps only those that were detected
+        by a sufficient fraction of patches that could have seen them.
+
+        Args:
+            detections: Dictionary with 'boxes', 'scores', 'labels', 'patch_ids'
+
+        Returns:
+            Filtered detections after voting
+        """
+        if detections['boxes'].shape[0] == 0:
+            return detections
+
+        import torchvision
+
+        boxes = detections['boxes']
+        scores = detections['scores']
+        labels = detections['labels']
+        patch_ids = detections['patch_ids']
+
+        # Calculate IoU between all boxes
+        ious = torchvision.ops.box_iou(boxes, boxes)
+
+        # Group boxes with high overlap (IoU > 0.5)
+        visited = torch.zeros(len(boxes), dtype=torch.bool)
+        keep_indices = []
+
+        for i in range(len(boxes)):
+            if visited[i]:
+                continue
+
+            # Find all boxes that overlap with this one
+            overlapping = (ious[i] > 0.5) & (labels == labels[i])
+            group_indices = torch.where(overlapping)[0]
+            visited[overlapping] = True
+
+            # Get unique patches that detected this object
+            patches_voted = patch_ids[group_indices].unique()
+            n_votes = len(patches_voted)
+
+            # Calculate how many patches could see this region
+            box_center = torch.tensor([
+                (boxes[i, 0] + boxes[i, 2]) / 2,
+                (boxes[i, 1] + boxes[i, 3]) / 2
+            ])
+            n_possible_patches = self._count_patches_covering_point(box_center)
+
+            # Apply voting threshold
+            vote_ratio = n_votes / max(n_possible_patches, 1)
+            if vote_ratio >= self.voting_threshold:
+                # Keep the detection with highest score from the group
+                best_idx = group_indices[scores[group_indices].argmax()]
+                keep_indices.append(best_idx)
+
+        if len(keep_indices) == 0:
+            return {
+                'boxes': torch.empty((0, 4)),
+                'scores': torch.empty(0),
+                'labels': torch.empty(0, dtype=torch.long),
+                'patch_ids': torch.empty(0, dtype=torch.long)
+            }
+
+        keep_indices = torch.tensor(keep_indices, dtype=torch.long)
+
+        return {
+            'boxes': detections['boxes'][keep_indices],
+            'scores': detections['scores'][keep_indices],
+            'labels': detections['labels'][keep_indices],
+            'patch_ids': detections['patch_ids'][keep_indices]
+        }
+
+    def _count_patches_covering_point(self, point: torch.Tensor) -> int:
+        """Count how many patches cover a given point in the image.
+
+        Args:
+            point: Tensor of shape [2] containing (x, y) coordinates
+
+        Returns:
+            Number of patches that cover this point
+        """
+        limits = self.get_limits()
+        count = 0
+
+        for _, limit in limits.items():
+            if (limit.x_min <= point[0] < limit.x_max and
+                limit.y_min <= point[1] < limit.y_max):
+                count += 1
+
+        return count
 
     def _apply_nms(
         self,
@@ -236,13 +343,17 @@ class RFDETRStitcher(ImageToPatches):
         """Apply non-maximum suppression to remove duplicate detections.
 
         Args:
-            detections: Dictionary with 'boxes', 'scores', 'labels'
+            detections: Dictionary with 'boxes', 'scores', 'labels', optionally 'patch_ids'
 
         Returns:
-            Filtered detections after NMS
+            Filtered detections after NMS (without patch_ids)
         """
         if detections['boxes'].shape[0] == 0:
-            return detections
+            return {
+                'boxes': torch.empty((0, 4)),
+                'scores': torch.empty(0),
+                'labels': torch.empty(0, dtype=torch.long)
+            }
 
         # Apply NMS per class
         keep_indices = []
@@ -274,6 +385,7 @@ class RFDETRStitcher(ImageToPatches):
 
         keep_indices = torch.cat(keep_indices)
 
+        # Return without patch_ids (only used for voting)
         return {
             'boxes': detections['boxes'][keep_indices],
             'scores': detections['scores'][keep_indices],

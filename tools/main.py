@@ -88,6 +88,7 @@ def visualize(
     port: Annotated[int, typer.Option("--port", help="Port for FiftyOne app")] = 5151,
     remote: Annotated[bool, typer.Option("--remote", help="Launch in remote mode (for SSH sessions)")] = False,
     max_samples: Annotated[int, typer.Option("--max-samples", help="Maximum number of samples to load (for debugging)")] = None,
+    grid_size: Annotated[int, typer.Option("--grid-size", help="Show grid with squares of specified pixel size (e.g., 560)")] = None,
 ):
     """Visualize datasets with FiftyOne."""
     from tools.data.visualization import visualize_main
@@ -103,6 +104,7 @@ def visualize(
         port=port,
         remote=remote,
         max_samples=max_samples,
+        grid_size=grid_size,
     )
 
 

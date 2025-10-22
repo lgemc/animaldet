@@ -8,6 +8,59 @@ import fiftyone as fo
 import pandas as pd
 
 
+def add_grid_overlay(dataset: fo.Dataset, grid_size: int) -> None:
+    """Add grid overlay to all samples in a FiftyOne dataset.
+
+    Args:
+        dataset: FiftyOne dataset
+        grid_size: Size of grid squares in pixels (e.g., 560)
+    """
+    import PIL.Image
+
+    print(f"Adding {grid_size}px grid overlay to {len(dataset)} samples...")
+
+    for sample in dataset:
+        # Get image dimensions
+        with PIL.Image.open(sample.filepath) as img:
+            img_w, img_h = img.size
+
+        # Create grid lines
+        polylines = []
+
+        # Vertical lines
+        for x in range(0, img_w, grid_size):
+            rel_x = x / img_w
+            # Create a vertical line from top to bottom
+            points = [(rel_x, 0), (rel_x, 1)]
+            polylines.append(
+                fo.Polyline(
+                    label="grid",
+                    points=[points],
+                    closed=False,
+                    filled=False,
+                )
+            )
+
+        # Horizontal lines
+        for y in range(0, img_h, grid_size):
+            rel_y = y / img_h
+            # Create a horizontal line from left to right
+            points = [(0, rel_y), (1, rel_y)]
+            polylines.append(
+                fo.Polyline(
+                    label="grid",
+                    points=[points],
+                    closed=False,
+                    filled=False,
+                )
+            )
+
+        sample["grid"] = fo.Polylines(polylines=polylines)
+        sample.save()
+
+    print(f"✓ Grid overlay added")
+
+
 def load_coco_dataset(
     data_path: str | Path,
     labels_path: str | Path,
@@ -111,6 +164,7 @@ def load_ungulate_dataset(
     database_uri: Optional[str] = None,
     max_samples: Optional[int] = None,
     bbox_padding_large_images: float = 0.002,
+    grid_size: Optional[int] = None,
 ) -> fo.Dataset:
     """Load ungulate dataset with bounding box annotations into FiftyOne.
 
@@ -122,6 +176,7 @@ def load_ungulate_dataset(
         database_uri: MongoDB connection URI (e.g., mongodb://localhost:27017)
         max_samples: Maximum number of samples to load (None for all)
         bbox_padding_large_images: Extra padding (relative coords) for bboxes on images > 2000px wide
+        grid_size: Size of grid squares in pixels (e.g., 560) to overlay on images
 
     Returns:
         FiftyOne dataset with bbox detections
@@ -203,6 +258,11 @@ def load_ungulate_dataset(
     dataset.add_samples(samples)
 
     print(f"Loaded {len(dataset)} images with {sum(len(s['ground_truth'].detections) for s in dataset)} detections")
+
+    # Add grid overlay if requested
+    if grid_size is not None:
+        add_grid_overlay(dataset, grid_size)
+
     return dataset
 
 
@@ -215,6 +275,7 @@ def load_herdnet_dataset(
     database_uri: Optional[str] = None,
     bbox_padding_large_images: float = 0.002,
     gt_csv_path: Optional[str | Path] = None,
+    grid_size: Optional[int] = None,
 ) -> fo.Dataset:
     """Load HerdNet dataset with point annotations into FiftyOne.
 
@@ -227,6 +288,7 @@ def load_herdnet_dataset(
         database_uri: MongoDB connection URI (e.g., mongodb://localhost:27017)
         bbox_padding_large_images: Extra padding (relative coords) for bboxes on images > 2000px wide
         gt_csv_path: Optional path to CSV file with ground truth annotations
+        grid_size: Size of grid squares in pixels (e.g., 560) to overlay on images
 
     Returns:
         FiftyOne dataset with keypoint detections
@@ -412,5 +474,9 @@ def load_herdnet_dataset(
             print(f"Loaded {len(dataset)} images with {sum(len(s['ground_truth'].detections) for s in dataset)} detections")
         else:
             print(f"Loaded {len(dataset)} images with {sum(len(s['ground_truth'].keypoints) for s in dataset)} keypoints")
+
+    # Add grid overlay if requested
+    if grid_size is not None:
+        add_grid_overlay(dataset, grid_size)
 
     return dataset

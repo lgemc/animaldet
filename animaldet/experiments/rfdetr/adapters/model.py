@@ -31,13 +31,14 @@ MODEL_VARIANTS = {
 }
 
 
-def build_model(cfg: ModelConfig, device: str = "cuda") -> torch.nn.Module:
+def build_model(cfg: ModelConfig, device: str = "cuda", reinit_head: bool = True) -> torch.nn.Module:
     """
     Build RF-DETR model from configuration.
 
     Args:
         cfg: Model configuration
         device: Device to place model on
+        reinit_head: Whether to reinitialize detection head (should be False when loading checkpoint)
 
     Returns:
         RF-DETR model instance (PyTorch nn.Module)
@@ -53,6 +54,7 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> torch.nn.Module:
     # Build model kwargs from config
     model_kwargs: Dict[str, Any] = {
         "num_classes": cfg.num_classes,
+        "encoder": cfg.encoder,
         "patch_size": cfg.patch_size,
         "num_windows": cfg.num_windows,
         "hidden_dim": cfg.hidden_dim,
@@ -78,13 +80,13 @@ def build_model(cfg: ModelConfig, device: str = "cuda") -> torch.nn.Module:
     # Create model instance (this is a wrapper: RFDETR class)
     rfdetr_wrapper = model_class(**model_kwargs)
 
-    # Reinitialize detection head with correct number of classes
+    # Reinitialize detection head only if requested (not when loading checkpoint)
     # The RF-DETR wrapper may have loaded pretrained weights with different num_classes
     # We need to ensure the head matches our dataset's num_classes
-    # NOTE: RF-DETR uses DETR-style classification (no separate background class)
-    # The num_classes should match exactly what was used during training
-    print(f"Restarting number of classes to {cfg.num_classes}")
-    rfdetr_wrapper.model.reinitialize_detection_head(cfg.num_classes)
+    # NOTE: RF-DETR uses DETR-style classification (adds +1 for background internally)
+    if reinit_head:
+        print(f"Reinitializing detection head for {cfg.num_classes} classes")
+        rfdetr_wrapper.model.reinitialize_detection_head(cfg.num_classes)
 
     # Extract the actual PyTorch model from the nested wrappers
     # rfdetr_wrapper.model is a Model instance

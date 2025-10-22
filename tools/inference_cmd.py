@@ -343,20 +343,39 @@ def _inference_rfdetr(
     # Get device using centralized utility
     actual_device = get_device(device)
 
-    # Build and load model
-    logger.info(f"Building RF-DETR model...")
-    model = build_model(cfg.model, device=str(actual_device))
+    # Load checkpoint first to get the actual architecture
+    logger.info(f"Loading checkpoint to inspect architecture...")
+    checkpoint = torch.load(checkpoint_path, map_location=actual_device, weights_only=False)
 
-    # Load checkpoint
-    checkpoint_data = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
-    if 'model' in checkpoint_data:
-        state_dict = checkpoint_data['model']
-    elif 'state_dict' in checkpoint_data:
-        state_dict = checkpoint_data['state_dict']
-    else:
-        state_dict = checkpoint_data
-    model.load_state_dict(state_dict, strict=True)
-    logger.info(f"Loaded checkpoint from {checkpoint_path}")
+    # Extract all architecture parameters from checkpoint args
+    ckpt_args = checkpoint['args']
+    logger.info(f"Checkpoint architecture: num_classes={ckpt_args.num_classes}, "
+                f"hidden_dim={ckpt_args.hidden_dim}, dec_layers={ckpt_args.dec_layers}, "
+                f"ca_nheads={ckpt_args.ca_nheads}, dec_n_points={ckpt_args.dec_n_points}")
+
+    # Override config with checkpoint's architecture parameters
+    cfg.model.num_classes = ckpt_args.num_classes
+    cfg.model.hidden_dim = ckpt_args.hidden_dim
+    cfg.model.dec_layers = ckpt_args.dec_layers
+    cfg.model.sa_nheads = ckpt_args.sa_nheads
+    cfg.model.ca_nheads = ckpt_args.ca_nheads
+    cfg.model.dec_n_points = ckpt_args.dec_n_points
+    cfg.model.num_queries = ckpt_args.num_queries
+    cfg.model.num_select = ckpt_args.num_select
+    cfg.model.encoder = ckpt_args.encoder
+    cfg.model.patch_size = ckpt_args.patch_size
+    cfg.model.num_windows = ckpt_args.num_windows
+    cfg.model.out_feature_indexes = ckpt_args.out_feature_indexes
+    cfg.model.projector_scale = ckpt_args.projector_scale
+    cfg.model.positional_encoding_size = ckpt_args.positional_encoding_size
+
+    # Build model with checkpoint's architecture (skip head reinitialization)
+    logger.info(f"Building RF-DETR model with checkpoint architecture...")
+    model = build_model(cfg.model, device=str(actual_device), reinit_head=False)
+
+    # Load checkpoint with strict=True since architecture now matches
+    model.load_state_dict(checkpoint['model'], strict=True)
+
     model = model.to(actual_device)
     model.eval()
 
@@ -394,6 +413,7 @@ def _inference_rfdetr(
         confidence_threshold=cfg.inference.threshold,
         nms_threshold=cfg.evaluator.nms_threshold,
         device_name=str(actual_device),
+        voting_threshold=0.5,
     )
 
     # Create transforms for preprocessing
