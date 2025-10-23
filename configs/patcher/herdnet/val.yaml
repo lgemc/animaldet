@@ -12,9 +12,9 @@ overlap: 160  # Recommended overlap for stitching
 
 # Paths for HerdNet dataset
 images_root: ${oc.env:DATA_DIR,./data}/herdnet/raw/val
-dest_dir: ${oc.env:DATA_DIR,./data}/herdnet/processed/512/ma
+dest_dir: ${oc.env:DATA_DIR,./data}/herdnet/processed/512_bbox/val
 csv_path: ${oc.env:DATA_DIR,./data}/herdnet/raw/groundtruth/csv/val_big_size_A_B_E_K_WH_WB.csv
-
+min_bbox_size_ratio: 0.3
 save_all: false  # Only save patches with annotations
 
 # Column mapping for HerdNet big_size CSV format (Image, x1, y1, x2, y2, Label)

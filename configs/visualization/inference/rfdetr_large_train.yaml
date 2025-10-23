@@ -1,5 +1,5 @@
 dataset_type: herdnet
-csv_path: outputs/inference/rfdetr_detections_large_train.csv
+csv_path: outputs/inference/rfdetr_detections_large_train_90.csv
 gt_csv_path: data/herdnet/raw/groundtruth/csv/train_big_size_A_B_E_K_WH_WB.csv
 images_dir: data/herdnet/raw/train
 name: rfdetr_inference_large_train

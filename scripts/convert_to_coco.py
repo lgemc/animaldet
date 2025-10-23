@@ -197,16 +197,33 @@ def main():
     parser = argparse.ArgumentParser(
         description="Convert patch-based dataset to COCO format for RF-DETR"
     )
+
+    # Single file mode arguments
+    parser.add_argument(
+        "--csv",
+        type=str,
+        help="Path to single CSV file to convert (single-file mode)"
+    )
+    parser.add_argument(
+        "--patches-dir",
+        type=str,
+        help="Directory containing patch images (required with --csv)"
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="Output JSON file path (required with --csv)"
+    )
+
+    # Batch mode arguments
     parser.add_argument(
         "--input-dir",
         type=str,
-        required=True,
         help="Root directory of input dataset (e.g., data/herdnet/processed/560_all)"
     )
     parser.add_argument(
         "--output-dir",
         type=str,
-        required=True,
         help="Output root directory for COCO format (e.g., data/rfdetr/herdnet/560_all)"
     )
     parser.add_argument(
@@ -247,12 +264,38 @@ def main():
 
     args = parser.parse_args()
 
+    # Determine whether to preserve species
+    preserve_species = not args.single_class
+
+    # Single file mode
+    if args.csv:
+        if not args.patches_dir or not args.output:
+            parser.error("--csv requires both --patches-dir and --output")
+
+        print("Single file conversion mode")
+        print(f"  CSV: {args.csv}")
+        print(f"  Patches dir: {args.patches_dir}")
+        print(f"  Output: {args.output}")
+        print(f"  Preserve species: {preserve_species}")
+        print()
+
+        convert_to_coco(
+            patches_dir=Path(args.patches_dir),
+            gt_csv=Path(args.csv),
+            output_json=Path(args.output),
+            preserve_species=preserve_species,
+            image_width=args.image_width,
+            image_height=args.image_height
+        )
+        return
+
+    # Batch mode - process multiple splits
+    if not args.input_dir or not args.output_dir:
+        parser.error("Either provide --csv with --patches-dir and --output, or provide --input-dir and --output-dir")
+
     # Set up paths
     input_root = Path(args.input_dir)
     output_root = Path(args.output_dir)
-
-    # Determine whether to preserve species
-    preserve_species = not args.single_class
 
     print(f"Converting dataset from: {input_root}")
     print(f"Output directory: {output_root}")

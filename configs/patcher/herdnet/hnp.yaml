@@ -12,8 +12,8 @@ overlap: 160  # Recommended overlap for stitching
 
 # Paths for HerdNet dataset
 images_root: ${oc.env:DATA_DIR,./data}/herdnet/raw/train
-dest_dir: ${oc.env:DATA_DIR,./data}/herdnet/processed/512_bbox/train
-csv_path: ${oc.env:DATA_DIR,./data}/herdnet/raw/groundtruth/csv/train_big_size_A_B_E_K_WH_WB.csv
+dest_dir: ${oc.env:DATA_DIR,./data}/herdnet/processed/512_bbox/hnp
+csv_path: outputs/inference/rfdetr_detections_small_train.csv
 min_bbox_size_ratio: 0.5
 save_all: false  # Only save patches with annotations
 

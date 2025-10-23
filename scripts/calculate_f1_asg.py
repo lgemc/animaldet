@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional JSON mapping of class ids to labels",
     )
-    parser.add_argument("--radius", type=float, default=20.0, help="Matching radius in pixels")
+    parser.add_argument("--radius", type=float, default=5.0, help="Matching radius in pixels")
     parser.add_argument(
         "--output-json",
         type=Path,
