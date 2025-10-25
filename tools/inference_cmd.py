@@ -347,34 +347,48 @@ def _inference_rfdetr(
     logger.info(f"Loading checkpoint to inspect architecture...")
     checkpoint = torch.load(checkpoint_path, map_location=actual_device, weights_only=False)
 
-    # Extract all architecture parameters from checkpoint args
+    # Extract architecture parameters from checkpoint args (with fallbacks to config)
     ckpt_args = checkpoint['args']
-    logger.info(f"Checkpoint architecture: num_classes={ckpt_args.num_classes}, "
-                f"hidden_dim={ckpt_args.hidden_dim}, dec_layers={ckpt_args.dec_layers}, "
-                f"ca_nheads={ckpt_args.ca_nheads}, dec_n_points={ckpt_args.dec_n_points}")
 
-    # Override config with checkpoint's architecture parameters
-    cfg.model.num_classes = ckpt_args.num_classes
-    cfg.model.hidden_dim = ckpt_args.hidden_dim
-    cfg.model.dec_layers = ckpt_args.dec_layers
-    cfg.model.sa_nheads = ckpt_args.sa_nheads
-    cfg.model.ca_nheads = ckpt_args.ca_nheads
-    cfg.model.dec_n_points = ckpt_args.dec_n_points
-    cfg.model.num_queries = ckpt_args.num_queries
-    cfg.model.num_select = ckpt_args.num_select
-    cfg.model.encoder = ckpt_args.encoder
-    cfg.model.patch_size = ckpt_args.patch_size
-    cfg.model.num_windows = ckpt_args.num_windows
-    cfg.model.out_feature_indexes = ckpt_args.out_feature_indexes
-    cfg.model.projector_scale = ckpt_args.projector_scale
-    cfg.model.positional_encoding_size = ckpt_args.positional_encoding_size
+    # Use checkpoint values if available, otherwise keep config values
+    cfg.model.num_classes = getattr(ckpt_args, 'num_classes', cfg.model.num_classes)
+    cfg.model.hidden_dim = getattr(ckpt_args, 'hidden_dim', cfg.model.hidden_dim)
+    cfg.model.dec_layers = getattr(ckpt_args, 'dec_layers', cfg.model.dec_layers)
+    cfg.model.sa_nheads = getattr(ckpt_args, 'sa_nheads', cfg.model.sa_nheads)
+    cfg.model.ca_nheads = getattr(ckpt_args, 'ca_nheads', cfg.model.ca_nheads)
+    cfg.model.dec_n_points = getattr(ckpt_args, 'dec_n_points', cfg.model.dec_n_points)
+    cfg.model.num_queries = getattr(ckpt_args, 'num_queries', cfg.model.num_queries)
+    cfg.model.num_select = getattr(ckpt_args, 'num_select', cfg.model.num_select)
+    cfg.model.encoder = getattr(ckpt_args, 'encoder', cfg.model.encoder)
+    cfg.model.patch_size = getattr(ckpt_args, 'patch_size', cfg.model.patch_size)
+    cfg.model.num_windows = getattr(ckpt_args, 'num_windows', cfg.model.num_windows)
+    cfg.model.out_feature_indexes = getattr(ckpt_args, 'out_feature_indexes', cfg.model.out_feature_indexes)
+    cfg.model.projector_scale = getattr(ckpt_args, 'projector_scale', cfg.model.projector_scale)
+    cfg.model.positional_encoding_size = getattr(ckpt_args, 'positional_encoding_size', cfg.model.positional_encoding_size)
+
+    # Check actual num_classes in checkpoint weights (RF-DETR adds +1 internally)
+    state_dict = checkpoint.get('model', checkpoint.get('ema_model'))
+    actual_num_classes_in_weights = state_dict['class_embed.weight'].shape[0]
+
+    # Adjust num_classes: RF-DETR will add +1, so we pass (actual - 1) to get actual
+    cfg.model.num_classes = actual_num_classes_in_weights - 1
+
+    logger.info(f"Model architecture: num_classes={cfg.model.num_classes} (+1 background = {actual_num_classes_in_weights}), "
+                f"hidden_dim={cfg.model.hidden_dim}, dec_layers={cfg.model.dec_layers}, "
+                f"ca_nheads={cfg.model.ca_nheads}, dec_n_points={cfg.model.dec_n_points}")
 
     # Build model with checkpoint's architecture (skip head reinitialization)
     logger.info(f"Building RF-DETR model with checkpoint architecture...")
     model = build_model(cfg.model, device=str(actual_device), reinit_head=False)
 
     # Load checkpoint with strict=True since architecture now matches
-    model.load_state_dict(checkpoint['model'], strict=True)
+    # Use normal model weights
+    if 'model' in checkpoint:
+        logger.info("Loading normal model weights")
+        model.load_state_dict(checkpoint['model'], strict=True)
+    else:
+        logger.info("Normal model not found in checkpoint, using EMA model")
+        model.load_state_dict(checkpoint['ema_model'], strict=True)
 
     model = model.to(actual_device)
     model.eval()
@@ -408,7 +422,7 @@ def _inference_rfdetr(
     stitcher = RFDETRStitcher(
         model=model,
         size=(cfg.model.resolution, cfg.model.resolution),
-        overlap=0,  # Non-overlapping patches
+        overlap=0,
         batch_size=cfg.inference.batch_size,
         confidence_threshold=cfg.inference.threshold,
         nms_threshold=cfg.evaluator.nms_threshold,

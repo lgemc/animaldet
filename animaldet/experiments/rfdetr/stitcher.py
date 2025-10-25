@@ -101,14 +101,15 @@ class RFDETRStitcher(ImageToPatches):
         # Step 3: Rescale detections to original image coordinates
         stitched_detections = self._stitch_detections(patch_detections)
 
-        # Step 3.5: Apply voting to filter detections based on patch agreement
-        if self.overlap > 0:
-            stitched_detections = self._apply_voting(stitched_detections)
+        # Remove patch_ids before returning (only used internally for voting)
+        if 'patch_ids' in stitched_detections:
+            stitched_detections = {
+                'boxes': stitched_detections['boxes'],
+                'scores': stitched_detections['scores'],
+                'labels': stitched_detections['labels']
+            }
 
-        # Step 4: Apply NMS to remove duplicates at patch boundaries
-        final_detections = self._apply_nms(stitched_detections)
-
-        return final_detections
+        return stitched_detections
 
     @torch.no_grad()
     def _inference(self, patches: torch.Tensor) -> List[Dict[str, torch.Tensor]]:

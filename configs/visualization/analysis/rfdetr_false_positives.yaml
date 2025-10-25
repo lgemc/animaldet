@@ -1,0 +1,8 @@
+dataset_type: herdnet
+csv_path: outputs/analysis/false_positives.csv
+gt_csv_path: data/herdnet/raw/groundtruth/csv/test_big_size_A_B_E_K_WH_WB.csv
+images_dir: data/herdnet/raw/test
+name: rfdetr_inference_y
+persistent: false
+point_radius: 10
+database_uri: mongodb://localhost:27017

@@ -1,0 +1,7 @@
+dataset_type: herdnet
+csv_path: data/herdnet/processed/512_bbox/test/gt.csv
+images_dir: data/herdnet/processed/512_bbox/test
+name: herdnet_512_test
+persistent: false
+point_radius: 10
+database_uri: mongodb://localhost:27017
