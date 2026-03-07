@@ -1,0 +1,147 @@
+\section{Metodología}
+
+La metodología adoptada sigue el ciclo de vida estándar de un proyecto de aprendizaje automático, estructurándose en cuatro fases principales: preparación de datos, modelado y experimentación, estrategia de entrenamiento y despliegue. El enfoque se centró en superar las limitaciones de los detectores tradicionales en escenarios de alta densidad mediante la implementación de arquitecturas basadas en Transformers con optimización de arquitectura neuronal (NAS).
+
+\subsection{Gestión y Procesamiento de Datos}
+
+\subsubsection{Descripción del Dataset}
+Se utilizó el conjunto de datos consolidado por Delplanque et al. \cite{delplanque-data}, el cual agrega 10.239 anotaciones de mamíferos africanos provenientes de dos fuentes principales: el Parque Nacional Virunga (RDC) y el \textit{Aerial Elephant Dataset} (AED). El dataset incluye seis clases de especies objetivo: Búfalo, Elefante, Kob, Topi, Facóquero y Cobo de agua.
+
+Las imágenes se caracterizan por una vista cenital con una resolución espacial muy alta, presentando un \textit{Ground Sampling Distance} (GSD) que varía entre 2.4 cm y 13 cm por píxel. El conjunto de datos presenta un desafío significativo de desbalance de clases, donde especies mayoritarias como el elefante superan en proporción 12:1 a especies minoritarias como el cobo de agua. La distribución detallada de individuos por especie y su división en los conjuntos de entrenamiento, validación y prueba se presenta en la tabla \ref{tab:dataset_dist}.
+
+\begin{table}[ht]
+\centering
+\caption{Distribución de individuos por especie en los conjuntos de entrenamiento, validación y prueba.}
+\label{tab:dataset_dist}
+% Usamos \columnwidth para asegurar que la tabla se ajuste al ancho de una sola columna
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccc}
+\hline
+\textbf{Especie} & \textbf{Entrenamiento} & \textbf{Validación} & \textbf{Prueba} & \textbf{Total} \\ \hline
+Búfalo & 1058 (70\%) & 102 (7\%) & 349 (23\%) & 1509 \\
+Elefante & 2012 (68\%) & 264 (9\%) & 688 (23\%) & 2964 \\
+Kob & 1732 (73\%) & 161 (7\%) & 477 (20\%) & 2370 \\
+Topi & 1678 (62\%) & 369 (13\%) & 675 (25\%) & 2722 \\
+Facóquero & 316 (73\%) & 43 (10\%) & 74 (17\%) & 433 \\
+Cobo de agua & 166 (69\%) & 39 (16\%) & 36 (15\%) & 241 \\ \hline
+\textbf{Total} & \textbf{6962 (68\%)} & \textbf{978 (10\%)} & \textbf{2299 (22\%)} & \textbf{10 239} \\ \hline
+\end{tabular}%
+}
+\end{table}
+
+
+\subsubsection{Preprocesamiento y Aumento de Datos}
+Dada la alta resolución de las imágenes aéreas originales, se implementó una estrategia de \textit{tiling} (teselado) adaptativa. Para alinearse con las arquitecturas de los modelos seleccionados, se generaron recortes (\textit{patches}) en tres resoluciones específicas: $384 \times 384$, $512 \times 512$ y $560 \times 560$ píxeles. Se mantuvo un solapamiento (\textit{overlap}) estratégico entre teselas para evitar el corte de animales en los bordes de la imagen.
+
+Para mejorar la robustez del modelo, se aplicó un pipeline de aumento de datos (\textit{data augmentation}) que incluyó:
+\begin{itemize}
+    \item \textbf{Transformaciones geométricas:} Rotaciones aleatorias, volteo horizontal/vertical y recortes aleatorios.
+    \item \textbf{Transformaciones fotométricas:} Ajustes de brillo, contraste y saturación para simular la variabilidad lumínica.
+\end{itemize}
+
+\subsection{Arquitecturas de Modelado}
+
+\subsubsection{Modelo de Referencia (Baseline): HerdNet}
+Para establecer una línea base rigurosa, se replicó la arquitectura \textbf{HerdNet} utilizando los scripts y clases definidos en su repositorio oficial \cite{herdnet}. Este modelo es una adaptación de la arquitectura \textit{CenterNet} diseñada específicamente para el conteo de multitudes, que abandona las cajas delimitadoras (bounding boxes) en favor de una estimación basada en puntos.
+
+Como se ilustra en la Figura \ref{fig:herdnet_arch}, la arquitectura consta de un codificador-decodificador basado en \textbf{DLA-34} (Deep Layer Aggregation), el cual bifurca el procesamiento en dos ramas especializadas:
+
+\begin{enumerate}
+    \item \textbf{Rama de Localización (Localization Map):} Genera un mapa de densidad de alta resolución ($256 \times 256$ píxeles para una entrada de $512 \times 512$) utilizando la Transformada de Distancia Inversa Focal (FIDT). Este mapa predice picos de densidad en el centro de cada animal, permitiendo separar individuos en aglomeraciones densas donde las cajas delimitadoras se solaparían significativamente.
+    \item \textbf{Rama de Clasificación (Classification Maps):} Produce mapas de menor resolución ($16 \times 16$ píxeles) que contienen la información semántica de la especie. Durante la inferencia, el modelo utiliza una Estrategia de Detección de Máximos Locales (LMDS) para extraer las coordenadas precisas del mapa de localización y asignarles la clase correspondiente del mapa de clasificación.
+\end{enumerate}
+
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\columnwidth]{static/img/herdnet_architecture.png} % Asegúrate de nombrar así tu archivo
+    \caption{Arquitectura de HerdNet. El modelo utiliza un backbone DLA-34 y se divide en dos cabezales: uno para generar un mapa de localización de alta resolución (arriba) y otro para mapas de clasificación de baja resolución (abajo) \cite{herdnet}.}
+    \label{fig:herdnet_arch}
+\end{figure}
+
+
+\subsubsection{Modelo Propuesto: RF-DETR}
+La solución propuesta se basa en \textbf{RF-DETR}, una arquitectura diseñada para optimizar el equilibrio entre precisión y latencia en aplicaciones de tiempo real. Como se ilustra en la Figura \ref{fig:rfdetr_arch}, su diseño integra componentes avanzados para mejorar la generalización y el manejo de oclusiones:
+
+\begin{itemize}
+    \item \textbf{Backbone DINOv2:} Utiliza un \textit{Vision Transformer} (ViT-L/14) pre-entrenado con aprendizaje autosupervisado. Este backbone provee representaciones visuales robustas que facilitan la adaptación a dominios específicos con pocos datos anotados.
+    \item \textbf{Extracción de Características Uniescala:} A diferencia de otros Transformers que procesan múltiples escalas, RF-DETR emplea una estrategia de extracción de características de una sola escala (ej. $640 \times 1280$ px) para reducir la sobrecarga computacional sin sacrificar significativamente la precisión.
+    \item \textbf{Cabezal Transformer y Atención Deformable:} Incorpora un mecanismo de atención cruzada deformable (\textit{Deformable Cross-Attention}) en el decodificador. Esto permite al modelo enfocarse selectivamente en características espacialmente relevantes, mejorando la detección en condiciones de oclusión severa, desorden visual (\textit{clutter}) y camuflaje, típicas de las manadas densas en la sabana.
+    \item \textbf{Predicción de Conjuntos sin NMS:} El modelo realiza una predicción directa de conjuntos de cajas delimitadoras, eliminando la necesidad de anclajes (\textit{anchor boxes}) y de la Supresión de No Máximos (NMS). Esto es crítico para resolver el problema de subconteo en manadas densas, donde el NMS tradicional suprimiría detecciones válidas muy próximas.
+    \item \textbf{Variantes:} Para evaluar el compromiso entre precisión y costo, se implementaron tres variantes: Nano (384 px), Small (512 px) y Large (560 px), permitiendo adaptar la complejidad del modelo a los recursos disponibles.
+\end{itemize}
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=0.93\textwidth]{static/img/rfdetr_architecture.png}
+    \caption{Arquitectura de RF-DETR para la detección de objetos. Muestra el flujo desde el backbone DINOv2, pasando por la extracción de características uniescala, hasta el cabezal Transformer con atención jerárquica y eliminación de ruido contrastivo. \cite{rf-detr}}
+    \label{fig:rfdetr_arch}
+\end{figure*}
+
+
+\subsection{Estrategia de Entrenamiento}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.35\textwidth, height=0.48\textheight]{static/img/entrenamiento.png}
+    \caption{Flujo de entrenamiento.}
+    \label{fig:deployment_arch}
+\end{figure}
+
+
+Se diseñó un protocolo dividido en dos etapas principales: la replicación del \textit{baseline} y el entrenamiento especializado del modelo propuesto, adaptando la técnica de minería de negativos difíciles (\textit{Hard Negative Mining}) para maximizar la precisión.
+
+\subsubsection{Replicación de HerdNet}
+El proceso se realizó en dos fases secuenciales:
+\begin{enumerate}
+    \item \textbf{Fase 1 (Entrenamiento Inicial):} Se entrenó el modelo durante 100 épocas con un \textit{learning rate} inicial de $1\times10^{-4}$ y un optimizador AdamW. La función de pérdida combinó \textit{Focal Loss} para la localización y \textit{Cross Entropy Loss} ponderada para la clasificación, asignando pesos específicos ($w=[0.1; 1.0; 2.0; \dots]$) para mitigar el desbalance de clases.
+    \item \textbf{Fase 2 (Refinamiento con HNP):} Se realizó un segundo entrenamiento de 50 épocas con una tasa de aprendizaje reducida a $1\times10^{-6}$. En esta etapa se introdujeron los parches negativos difíciles (\textit{Hard Negative Patches} - HNP), generados al ejecutar el modelo de la Fase 1 sobre las imágenes de entrenamiento y recolectar las predicciones de falsos positivos con alta confianza.
+\end{enumerate}
+
+\subsubsection{Adaptación para RF-DETR}
+
+Se replicó la estrategia de dos fases de HerdNet con las siguientes adaptaciones para la arquitectura Transformer:
+
+\paragraph{Hiperparámetros de Entrenamiento}
+\textbf{Fase 1:} Se utilizó el \textit{backbone} DINOv2 pre-entrenado con normalización ImageNet y learning rate por defecto del framework (con decaimiento por capas). Se implementó un callback personalizado para monitorear métricas de HerdNet durante el entrenamiento.
+
+\textbf{Fase 2:} Fine-tuning con learning rate reducido ($1 \times 10^{-5}$ para las tres variantes), aumentación multi-escala activada, y regularización mediante weight decay y EMA. El dataset ampliado con HNP mantuvo las anotaciones originales solo en los parches positivos, forzando al modelo a predecir ausencia de objetos en regiones visualmente confusas.
+
+
+\paragraph{Inferencia y Evaluación}
+Se empleó un \texttt{SimpleStitcher} para procesar imágenes completas en ventanas deslizantes y reconstruir detecciones en coordenadas originales. Las métricas se calcularon con el framework de HerdNet (radio de 20 píxeles) para mantener comparabilidad directa.
+
+\subsection{Herramientas y Despliegue}
+
+El desarrollo de la solución siguió una arquitectura de microservicios modular, separando el motor de inferencia de la capa de presentación y orquestando el despliegue mediante prácticas de Infraestructura como Código (IaC).
+
+\subsubsection{Backend y Optimización de Inferencia}
+El núcleo del sistema se implementó utilizando \textbf{FastAPI}, exponiendo una API REST de alto rendimiento. Para optimizar la latencia en un entorno de producción, se migró el modelo entrenado en PyTorch al formato \textbf{ONNX Runtime}. Esta decisión técnica permitió:
+\begin{itemize}
+    \item Maximizar la velocidad de inferencia, reduciendo la dependencia de GPUs costosas en inferencia.
+    \item Disminuir la huella de memoria y garantizar la portabilidad entre diferentes arquitecturas de hardware.
+\end{itemize}
+La API gestiona endpoints críticos como \texttt{/api/inference} para el procesamiento de imágenes y \texttt{/health} para el monitoreo de disponibilidad.
+
+\subsubsection{Interfaz de Usuario (Frontend)}
+Para la validación visual y comparación de experimentos, se desarrolló una \textit{Single Page Application} (SPA) basada en el stack moderno de \textbf{React} y \textbf{TypeScript}, construida con Vite. La interfaz integra:
+\begin{itemize}
+    \item \textbf{Visualización de Detecciones:} Componentes de Canvas personalizados para renderizar las cajas delimitadoras (\textit{bounding boxes}) sobre las imágenes aéreas de alta resolución.
+    \item \textbf{Comparativa de Modelos:} Módulos específicos (\textit{ExperimentComparison}) que permiten contrastar visualmente el rendimiento entre diferentes versiones del modelo (e.g., RF-DETR vs. Baseline).
+\end{itemize}
+
+\subsubsection{Infraestructura Cloud y Orquestación}
+El despliegue en producción se realizó sobre \textbf{Amazon Web Services (AWS)}, utilizando \textbf{Terraform} para garantizar la reproducibilidad de la infraestructura. La arquitectura, diseñada para alta disponibilidad y eficiencia de costos, se compone de:
+
+\begin{enumerate}
+    \item \textbf{Cómputo Serverless (AWS ECS \& Fargate):} La aplicación se contenedorizó con Docker y se desplegó en Amazon ECS utilizando la estrategia de capacidad \textit{Fargate Spot}, logrando una reducción de costos operativa estimada del 70\%.
+    \item \textbf{Gestión de Tráfico:} Se implementó un \textit{Application Load Balancer} (ALB) distribuido en múltiples zonas de disponibilidad, con verificaciones de estado automáticas para gestionar el tráfico de inferencia.
+    \item \textbf{Seguridad y Monitoreo:} La red se aisló mediante una VPC privada, restringiendo el acceso a los contenedores únicamente a través del ALB. El monitoreo de logs y métricas de rendimiento se centralizó en \textit{CloudWatch}, asegurando la observabilidad del sistema en tiempo real.
+\end{enumerate}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.4\textwidth]{static/img/arquitectura_despliegue.png}
+    \caption{Arquitectura de despliegue de la solución en la nube.}
+    \label{fig:deployment_arch}
+\end{figure}

@@ -1,0 +1,98 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+
+
+% ==== Español en Overleaf ====
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+% =============================
+
+
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{dblfloatfix}
+\usepackage{multirow}
+\usepackage{placeins}
+\renewcommand{\IEEEkeywordsname}{Palabras clave}
+
+\makeatletter
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+\makeatother
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Evaluación de RF-DETR para la Detección Multiespecie en Escenarios de Alta Oclusión en la Sabana Africana\\
+}
+
+\author{
+\IEEEauthorblockN{1\textsuperscript{st} Amir Sadour}
+\IEEEauthorblockA{\textit{MaIA} \\
+\textit{Universidad de los Andes}\\
+Bogotá, Colombia \\
+a.sadour@uniandes.edu.co}
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} Camilo Rodriguez}
+\IEEEauthorblockA{\textit{MaIA} \\
+\textit{Universidad de los Andes}\\
+Bogotá, Colombia \\
+ca.rodriguezs123@uniandes.edu.co}
+\linebreak % <<---- fuerza el salto de línea
+\and
+\IEEEauthorblockN{3\textsuperscript{rd} Claudia Agudelo}
+\IEEEauthorblockA{\textit{MaIA} \\
+\textit{Universidad de los Andes}\\
+Cali, Colombia \\
+cj.agudelo@uniandes.edu.co}
+\and
+\IEEEauthorblockN{4\textsuperscript{th} Luis Manrique}
+\IEEEauthorblockA{\textit{MaIA} \\
+\textit{Universidad de los Andes}\\
+Bogotá, Colombia \\
+l.manriquec@uniandes.edu.co}
+}
+
+
+\maketitle
+
+\input{sections/abstract}
+
+\input{sections/introduccion}
+
+\input{sections/estado_del_arte}
+
+\input{sections/metodologia}
+
+\input{sections/resultados}
+
+\input{sections/discusion}
+
+\input{sections/conclusiones}
+
+\begin{thebibliography}{00}
+\bibitem{xu-review} Xu, Z., Wang, T., Skidmore, A. K., \& Lamprey, R. (2024). A review of deep learning techniques for detecting animals in aerial and satellite images. International Journal of Applied Earth Observation and Geoinformation, 128, 103732. https://doi.org/10.1016/j.jag.2024.103732
+\bibitem{herdnet} Delplanque, A., Foucher, S., Théau, J., Bussière, E., Vermeulen, C., \& Lejeune, P. (2023). From crowd to herd counting: How to precisely detect and count African mammals using aerial imagery and deep learning? ISPRS Journal of Photogrammetry and Remote Sensing, 197, 167–180. https://doi.org/10.1016/j.isprsjprs.2023.01.025
+\bibitem{wildlife-mapper} Kumar, S., Zhang, B., Gudavalli, C., Levenson, C., Hughey, L., Stabach, J. A., Amoke, I., Ojwang, G., Mukeka, J., Mwiu, S., Ogutu, J., Frederick, H., \& Manjunath, B. S. (2024). WildlifeMapper: Aerial image analysis for multi-species detection and identification. En 2024 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) (pp. 12594–12604). IEEE. https://doi.org/10.1109/CVPR52733.2024.01197
+\bibitem{open-wildlife} Patel, M., Noa Turnes, J., Hsiao, J., Xu, L., \& Clausi, D. (2025). OpenWildlife: Open-vocabulary multi-species wildlife detector for geographically-diverse aerial imagery. arXiv. https://doi.org/10.48550/arXiv.2506.19204
+\bibitem{rf-detr} Robinson, I., Robicheaux, P., Popov, M., Ramanan, D., \& Peri, N. (2025). RF-DETR: Neural Architecture Search for Real-Time Detection Transformers. arXiv. https://doi.org/10.48550/arXiv.2511.09554
+
+\bibitem{dinov2} Oquab, M., Darcet, T., Moutakanni, T., Vo, H. V., Szafraniec, M., Khalidov, V., Fernandez, P., Haziza, D., Massa, F., El-Nouby, A., Assran, M., Ballas, N., Galuba, W., Howes, R., Huang, P.-Y., Li, S.-W., Misra, I., Rabbat, M., Sharma, V., ... Synnaeve, G. (2024). DINOv2: Learning robust visual features without supervision. Transactions on Machine Learning Research.
+
+\bibitem{fima-q} Wu, Z., Wang, S., Zhang, J., Chen, J., \& Wang, Y. (2025). FIMA-Q: Post-training quantization for vision transformers by Fisher information matrix approximation. arXiv. https://doi.org/10.48550/arXiv.2506.11543
+
+\bibitem{hqod} Huang, L., Dong, Z., Chen, S.-L., Zhang, R., Ti, S., Chen, F., \& Yin, X.-C. (2024). HQOD: Harmonious quantization for object detection. En 2024 IEEE International Conference on Multimedia and Expo (ICME) (pp. 1–6). IEEE. https://doi.org/10.1109/ICME57554.2024.10687589
+\bibitem{deimv2} Huang, S., Hou, Y., Liu, L., Yu, X., \& Shen, X. (2025). Real-Time Object Detection Meets DINOv3. arXiv preprint arXiv:2509.20787. https://arxiv.org/abs/2509.20787
+\bibitem{delplanque-data} Delplanque, A., Foucher, S., Lejeune, P., Linchant, J., \& Théau, J. (2021). Multispecies detection and identification of African mammals in aerial imagery using convolutional neural networks. Remote Sensing in Ecology and Conservation, 8(2), 166–179. https://doi.org/10.1002/rse2.234
+\bibitem{dinov3} Siméoni, O., Vo, H. V., Seitzer, M., Baldassarre, F., Oquab, M., Jose, C., Khalidov, V., Szafraniec, M., Yi, S., Ramamonjisoa, M., Massa, F., Haziza, D., Wehrstedt, L., Wang, J., Darcet, T., Moutakanni, T., Sentana, L., Roberts, C., Vedaldi, A., Tolan, J., Brandt, J., Couprie, C., Mairal, J., Jégou, H., \& Bojanowski, P. (2025). DINOv3. arXiv preprint arXiv:2508.10104. https://arxiv.org/abs/2508.10104
+\end{thebibliography}
+
+
+\input{sections/anexos}
+
+\end{document}
