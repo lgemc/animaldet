@@ -1,0 +1,70 @@
+\section{Discusión}
+
+Los resultados validan la hipótesis de que la arquitectura RF-DETR supera al baseline HerdNet gracias a su diseño libre de NMS y al uso de representaciones visuales robustas. Sin embargo, el hallazgo más relevante de este estudio no es solo la mejora en precisión, sino la identificación de la arquitectura óptima en términos de costo-beneficio.
+
+\subsection{Small vs. Large: Eficiencia sobre Fuerza Bruta}
+
+Si bien se esperaba que la variante \textbf{Large} (aprox. 128M de parámetros ) dominara las métricas debido a su mayor capacidad, los resultados muestran que la variante \textbf{Small} (aprox. 32M de parámetros ) logró un rendimiento ligeramente superior en el F1-Score global (90.24\% vs 88.66\%).
+
+Este fenómeno sugiere que el rendimiento del modelo ha alcanzado un punto de saturación respecto a la complejidad de la arquitectura para este dataset específico. Es probable que el modelo Large haya incurrido en un leve sobreajuste (\textit{overfitting}), aprendiendo detalles irrelevantes del fondo en el conjunto de entrenamiento que penalizaron su generalización en la prueba.
+
+Por lo tanto, la principal ventaja que ofrece el modelo small radica en que logró superar al modelo más potente utilizando una fracción de los parámetros y con un tiempo de inferencia un \textbf{56\% menor} (193 ms vs 442 ms). Esto lo convierte indiscutiblemente en la mejor opción para despliegue.
+
+\subsection{Análisis de Latencia: Eficiencia Estructural vs. Costo Computacional}
+
+El análisis de los tiempos de inferencia revela un comportamiento no lineal interesante entre las variantes \textbf{Nano} y \textbf{Small}, evidenciando un compromiso (\textit{trade-off}) entre la eficiencia del preprocesamiento y el costo computacional bruto.
+
+\subsubsection{Velocidad Promedio: La ventaja del modelo Small}
+En términos de latencia media, \textbf{RF-DETR Small} (193.39 ms) supera a la variante \textbf{Nano} (208.53 ms). Esto confirma la hipótesis de la \textit{Ineficiencia del Teselado}: al utilizar una resolución de entrada mayor ($512 \times 512$), el modelo Small requiere generar y ensamblar un número significativamente menor de parches para cubrir la misma área geográfica. La reducción en la sobrecarga administrativa (I/O, pre-procesamiento y fusión de resultados) compensa con creces el costo extra de inferencia por parche.
+
+\subsubsection{Latencia de Cola (P95): La estabilidad del modelo Nano}
+Sin embargo, en el percentil 95 (P95), la tendencia se invierte: el modelo \textbf{Nano} muestra una latencia máxima menor (317.55 ms) comparada con el \textbf{Small} (352.77 ms). Esto se debe a la física fundamental del cálculo de tensores:
+\begin{itemize}
+    \item Un parche del modelo Small ($512^2$ px) contiene un \textbf{77\% más de píxeles} que uno del modelo Nano ($384^2$ px).
+    \item En escenarios de alta carga o complejidad visual extrema, el costo cuadrático de los mecanismos de atención del Transformer sobre mapas de características más grandes penaliza al modelo Small.
+\end{itemize}
+
+\subsection{Small vs. Large: Eficiencia sobre Fuerza Bruta}
+
+Si bien se esperaba que la variante \textbf{Large} (aprox. 128M de parámetros ) dominara las métricas debido a su mayor capacidad, los resultados muestran que la variante \textbf{Small} (aprox. 32M de parámetros ) logró un rendimiento ligeramente superior en el F1-Score global (90.24\% vs 88.66\%).
+
+Este fenómeno sugiere que el rendimiento del modelo ha alcanzado un punto de saturación respecto a la complejidad de la arquitectura para este dataset específico. Es probable que el modelo Large haya incurrido en un leve sobreajuste (\textit{overfitting}), aprendiendo detalles irrelevantes del fondo en el conjunto de entrenamiento que penalizaron su generalización en la prueba.
+
+Por lo tanto, la principal ventaja que ofrece el modelo small radica en que logró superar al modelo más potente utilizando una fracción de los parámetros y con un tiempo de inferencia un \textbf{56\% menor} (193 ms vs 442 ms). Esto lo convierte indiscutiblemente en la mejor opción para despliegue.
+
+\subsection{Análisis de Latencia: Eficiencia Estructural vs. Costo Computacional}
+
+El análisis de los tiempos de inferencia revela un comportamiento no lineal interesante entre las variantes \textbf{Nano} y \textbf{Small}, evidenciando un compromiso (\textit{trade-off}) entre la eficiencia del preprocesamiento y el costo computacional bruto.
+
+\subsubsection{Velocidad Promedio: La ventaja del modelo Small}
+En términos de latencia media, \textbf{RF-DETR Small} (193.39 ms) supera a la variante \textbf{Nano} (208.53 ms). Esto confirma la hipótesis de la \textit{Ineficiencia del Teselado}: al utilizar una resolución de entrada mayor ($512 \times 512$), el modelo Small requiere generar y ensamblar un número significativamente menor de parches para cubrir la misma área geográfica. La reducción en la sobrecarga administrativa (I/O, pre-procesamiento y fusión de resultados) compensa con creces el costo extra de inferencia por parche.
+
+\subsubsection{Latencia de Cola (P95): La estabilidad del modelo Nano}
+Sin embargo, en el percentil 95 (P95), la tendencia se invierte: el modelo \textbf{Nano} muestra una latencia máxima menor (317.55 ms) comparada con el \textbf{Small} (352.77 ms). Esto se debe a la física fundamental del cálculo de tensores:
+\begin{itemize}
+    \item Un parche del modelo Small ($512^2$ px) contiene un \textbf{77\% más de píxeles} que uno del modelo Nano ($384^2$ px).
+    \item En escenarios de alta carga o complejidad visual extrema, el costo cuadrático de los mecanismos de atención del Transformer sobre mapas de características más grandes penaliza al modelo Small.
+\end{itemize}
+
+Aunque las variantes \textbf{Nano} y \textbf{Small} presentan perfiles de latencia y tamaño comparables, la variante \textbf{Small} se consolida como la elección definitiva por su superioridad cualitativa. El incremento marginal en la resolución de entrada ($512 \times 512$) permite superar el umbral mínimo de representación necesario para distinguir especies críticas (como el Elefante), logrando un salto en F1-Score del 71.78\% al 90.24\% sin incurrir en los costos de la variante Large.
+
+
+\subsection{Impacto del Hard Negative Mining (HNM)}
+
+El refinamiento con HNM fue el factor determinante para la viabilidad del modelo Small. Inicialmente, este modelo presentaba una precisión baja (0.26), indicando una tendencia a alucinar animales en texturas complejas. La fase 2 corrigió drásticamente este comportamiento (precisión 0.94), demostrando que los Transformers de tamaño medio tienen la plasticidad necesaria para aprender a discriminar fondos difíciles sin necesitar la capacidad masiva (y el costo) de los modelos Large.
+
+\subsection{Análisis por Especie}
+
+La mejora en la detección de especies minoritarias valida el uso de \textit{backbones} pre-entrenados como DINOv2. En el caso del \textit{Cobo de agua} (2.4\% del dataset), las variantes de RF-DETR mantuvieron un F1-Score robusto (mayor a 0.70), superando al baseline HerdNet. Esto indica que el modelo no requiere miles de ejemplos para aprender una representación discriminativa de una especie, un rasgo crucial para la conservación de fauna amenazada donde los datos son escasos por naturaleza.
+
+\subsection{Limitaciones y Oportunidades de Mejora}
+
+A pesar del éxito general del modelo \textbf{RF-DETR Small}, el análisis detallado de los resultados revela dos limitaciones técnicas importantes que definen el alcance actual de la solución y las direcciones futuras.
+
+\subsubsection{El Límite Inferior de la Arquitectura Nano}
+La variante \textbf{Nano} mostró un rendimiento insuficiente (F1 global 71.78\%), colapsando dramáticamente en la clase \textit{Elefante} con un F1-Score de apenas 0.0363, en marcado contraste con el $>0.86$ logrado por las variantes Small y Large. Este fallo catastrófico establece un límite inferior claro: para distinguir patrones complejos en imágenes aéreas de alta altitud, se requiere una resolución de entrada mínima (al menos $512 \times 512$) y una profundidad de red que la versión Nano no ofrece.
+
+\subsubsection{Margen de Mejora en Clases Minoritarias}
+Aunque RF-DETR mejoró la detección de especies subrepresentadas respecto a HerdNet, el desempeño en clases como el \textit{Facóquero} (F1 0.4065 en Small) y el \textit{Cobo de agua} (F1 0.7097 en Small) sigue siendo inferior al de las clases mayoritarias ($>0.84$).
+
+Es crucial notar que, a diferencia de HerdNet, el entrenamiento de RF-DETR \textbf{no implementó una ponderación agresiva de la función de pérdida} (HerdNet utilizó pesos de hasta $12$ para clases minoritarias). Esto sugiere que el rendimiento actual de RF-DETR tiene un potencial significativo para aumentar aún más la precisión en estas clases críticas mediante la incorporación de estrategias de \textit{Weighted Loss} o técnicas de sobre-muestreo (\textit{Oversampling}) específicas para las especies menos representadas.

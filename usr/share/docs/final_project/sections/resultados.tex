@@ -1,0 +1,194 @@
+\section{Resultados y evaluación}
+
+Se presenta una evaluación del rendimiento de tres variantes de RF-DETR (Nano, Small, Large) en comparación con HerdNet, el modelo de referencia establecido en la literatura para la detección de fauna en manadas densas. Los resultados se organizan en subsecciones que analizan: (1) el rendimiento cuantitativo general, (2) la precisión por especie y el impacto en clases minoritarias, (3) el efecto del HNM, y (4) la eficiencia computacional y viabilidad práctica de los modelos.
+
+\subsection{Rendimiento Cuantitativo Comparativo}
+
+\subsubsection{Métricas}
+
+Para evaluar los modelos tomamos las métricas de referencia de \textit{HerdNet}: precisión, recall y f1, en sus variantes por clase y binaria, en esta última una confusión entre especies de animales no se penaliza, ya que solo se tiene en cuenta la detección de un animal, independiente de su especie. De esta forma definimos las métricas como sigue:
+
+\begin{itemize}
+    \item \textbf{Verdadero positivo (VP)}: una detección es un verdadero positivo si su centro está cerca de un animal de la fuente de la verdad por no más de \textbf{20px} y la clase está correctamente clasificada (métricas por clase).
+
+    \item \textbf{Falso negativo (FN)}: se considera un falso negativo si para una anotación de la fuente de la verdad no existe una detección en predicciones que esté a menos de \textbf{20px}. Para métricas por clase, la clase debe ser igual en la fuente de la verdad y detecciones.
+
+    \item \textbf{Falso positivo (FP)}: se considera un falso positivo toda detección que no esté cerca de ninguna etiqueta de la fuente de la verdad (menos de \textbf{20px} de distancia desde el centro) cuya clase coincida (para el caso de métricas por clase).
+\end{itemize}
+
+\noindent Las métricas se definen como:
+
+\[
+\text{Precisión (P)} = \frac{VP}{VP + FP}
+\]
+
+\[
+\text{Recall (R)} = \frac{VP}{VP + FN}
+\]
+
+\[
+\text{Puntaje F1} = 2 \cdot \frac{\text{Precisión} \cdot \text{Recall}}{\text{Precisión} + \text{Recall}}
+\]
+
+\[
+\text{MAE} = \frac{1}{I} \sum_{i=1}^{I} \left| \hat{n}_i - n_i \right|
+\]
+
+\[
+\text{RMSE} = \sqrt{\frac{1}{I} \sum_{i=1}^{I} \left( \hat{n}_i - n_i \right)^2}
+\]
+
+\subsubsection{Métricas globales de rendimiento en el conjunto de prueba}
+La Tabla \ref{tab:overall_metrics} presenta las métricas globales de rendimiento para los cuatro modelos evaluados en sus dos fases de entrenamiento. Esta comparación permite analizar tanto el rendimiento final como el impacto del HNM en cada arquitectura. Los resultados de Fase 2 demuestran mejoras consistentes de las variantes RF-DETR sobre el baseline HerdNet en las métricas críticas de precisión y conteo.
+
+\begin{table}[ht]
+\centering
+\caption{Métricas globales de rendimiento en el conjunto de prueba: comparación Fase 1 (entrenamiento inicial) vs Fase 2 (con Hard Negative Mining).}
+\label{tab:overall_metrics}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llccccc}
+\hline
+\textbf{Modelo} & \textbf{Fase} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{MAE} & \textbf{RMSE} \\ \hline
+\multirow{2}{*}{HerdNet}
+& Fase 1 & 0.6154 & 0.8673 & 0.7200 & 4.3450 & 9.8746 \\
+& Fase 2 & 0.8229 & 0.8425 & 0.8326 & 1.8953 & 3.6700 \\ \hline
+\multirow{2}{*}{RF-DETR nano}
+& Fase 1 & 0.5023 & 0.9378 & 0.6542 & 7.7403 & 10.9341 \\
+& Fase 2 & 0.8161 & 0.6407 & 0.7178 & 3.7287 & 6.8957 \\ \hline
+\multirow{2}{*}{RF-DETR small}
+& Fase 1 & 0.2615 & 0.9517 & 0.4103 & 23.5310 & 32.0026 \\
+& Fase 2 & \textbf{0.9385} & 0.8691 & \textbf{0.9024} & \textbf{1.1473} & \textbf{2.4112} \\ \hline
+\multirow{2}{*}{RF-DETR large}
+& Fase 1 & 0.6133 & 0.9230 & 0.7369 & 4.8643 & 7.5742 \\
+& Fase 2 & 0.8893 & \textbf{0.8839} & 0.8866 & 1.2248 & 3.0966 \\ \hline
+\end{tabular}%
+}
+\end{table}
+
+\textbf{RF-DETR small} se posiciona como el modelo de mejor desempeño global, alcanzando un F1-Score de 90.24\%, lo que representa una mejora del \textbf{8.37\%} sobre HerdNet (83.26\%). Esta mejora se debe principalmente a un incremento sustancial en precisión (93.85\% vs 82.29\%), indicando una reducción significativa de falsos positivos. Simultáneamente, el recall se mantuvo competitivo (86.91\% vs 84.25\%), demostrando que la eliminación del NMS no compromete la capacidad de recuperación de individuos.
+
+El análisis de las métricas de error de conteo revela mejoras aún más pronunciadas. RF-DETR small redujo el MAE en un \textbf{39.47\%} (de 1.90 a 1.15) y el RMSE en un \textbf{34.29\%} (de 3.67 a 2.41) en comparación con HerdNet Fase 2. Estas reducciones son críticas para aplicaciones de conservación, donde el conteo preciso de poblaciones es fundamental para la toma de decisiones de gestión.
+
+\textbf{RF-DETR large}, con un F1-Score de 88.66\%, también superó significativamente a HerdNet (+6.48\%), alcanzando el mejor recall de 88.39\%. Sin embargo, \textbf{RF-DETR nano} presenta un rendimiento considerablemente inferior (F1=71.78\%), especialmente en recall (64.07\%), lo que sugiere que la arquitectura nano carece de la capacidad expresiva necesaria para capturar la complejidad de escenarios multiespecie con alta oclusión.
+
+Un patrón crítico emerge al comparar ambas fases de entrenamiento: todos los modelos en Fase 1 priorizaban recall sobre precisión, resultando en F1-Scores subóptimos debido a la generación excesiva de falsos positivos. RF-DETR small mostró el comportamiento más extremo, alcanzando un recall de 95.17\% en Fase 1 pero con una precisión de apenas 26.15\%, generando un MAE de 23.53. El refinamiento mediante HNM en Fase 2 corrigió este desbalance sistemáticamente, mejorando la precisión de todos los modelos mientras mantenía niveles aceptables de recall. Este patrón valida la necesidad del entrenamiento en dos fases para aplicaciones donde la precisión de conteo es tan crítica como la capacidad de detección.
+
+\subsection{Análisis por Especie y Clases Minoritarias}
+
+La Figura \ref{fig:f1_per_class} presenta el F1-Score desagregado por especie, revelando patrones diferenciados de rendimiento que validan una de las hipótesis centrales de este trabajo: los Transformers mejoran la discriminación en especies minoritarias.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{static/img/f1_score_por_clase_stage2.png}
+    \caption{F1-Score por especie para todos los modelos en Fase 2.}
+    \label{fig:f1_per_class}
+\end{figure*}
+
+Los resultados más destacados se observan en las dos especies minoritarias del dataset:
+
+\textbf{Cobo de agua:} RF-DETR large alcanzó un F1-Score de \textbf{0.816}, representando una mejora del \textbf{19.1\%} sobre HerdNet (0.685). Esta mejora se atribuye a un recall excepcional de 86.1\% y una precisión de 77.5\%, indicando que el modelo captura exitosamente la mayoría de los individuos de esta especie extremadamente subrepresentada (241 individuos en total, apenas el 2.4\% del dataset).
+
+\textbf{Facóquero:} Aunque la mejora fue más modesta, RF-DETR large alcanzó un F1-Score de 0.449 versus 0.415 de HerdNet (mejora del 8.2\%). Sin embargo, la precisión mejoró significativamente (0.484 vs 0.388), reduciendo los falsos positivos en un 24.7\%.
+
+Para especies mayoritarias como Elefante y Kob, el rendimiento tuvo mejoras incrementales de RF-DETR. Lo que indica que no se sacrifica el rendimiento en clases bien representadas mientras se mejora sustancialmente la detección de especies minoritarias, un equilibrio crítico para aplicaciones reales de monitoreo multiespecie.
+
+\subsection{Impacto del Hard Negative Mining}
+
+Como se observa en la Tabla \ref{tab:overall_metrics}, la estrategia de dos fases con HNM fue fundamental para alcanzar el rendimiento final reportado. La comparación entre Fase 1 y Fase 2 revela mejoras diferenciadas según la arquitectura, reflejando distintos niveles de susceptibilidad a la generación de falsos positivos durante el entrenamiento inicial.
+
+\textbf{RF-DETR small} mostró el impacto más significativo del HNM, con un incremento en precisión de 0.26 a 0.94 (mejora relativa del \textbf{258.9\%}), lo que indica que el modelo sin refinamiento presentaba una alta tasa de falsos positivos en patrones ambiguos. El F1-Score pasó de 0.41 a 0.90 (mejora del \textbf{119.9\%}), transformándolo de un modelo con rendimiento limitado a la mejor solución del estudio. Este comportamiento sugiere que la arquitectura small, con su mayor capacidad expresiva, es particularmente susceptible a generar falsos positivos en fondos complejos cuando se entrena sin ejemplos negativos difíciles.
+
+En contraste, \textbf{HerdNet} y \textbf{RF-DETR large} mostraron mejoras más moderadas pero consistentes. HerdNet incrementó su precisión en +33.7\% (de 0.62 a 0.82) y su F1-Score en +15.6\% (de 0.72 a 0.83), mientras que RF-DETR large mejoró +45.0\% en precisión (de 0.61 a 0.89) y +20.3\% en F1-Score (de 0.74 a 0.89). Estas mejoras más moderadas indican que ambas arquitecturas poseían cierta robustez intrínseca contra falsos positivos desde la Fase 1, requiriendo un refinamiento menos agresivo. \textbf{RF-DETR nano}, por su parte, mejoró su precisión en +62.5\% (de 0.50 a 0.82), aunque su F1-Score final (0.72) permaneció por debajo del baseline, confirmando las limitaciones arquitectónicas de la variante más compacta.
+
+La incorporación sistemática de estos ejemplos difíciles en la Fase 2 permitió a los modelos desarrollar representaciones más discriminativas, aprendiendo a distinguir características texturales y contextuales sutiles que separan animales reales de elementos de background visualmente similares.
+
+\subsection{Eficiencia Computacional}
+
+La Figura \ref{fig:inference_times} presenta la distribución de latencias de inferencia por imagen medidas en el conjunto de prueba utilizando una GPU NVIDIA A100 (80GB VRAM). Los diagramas de caja revelan tanto la tendencia central como la variabilidad de los tiempos de procesamiento para cada modelo.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\columnwidth]{static/img/inference_times_boxplot.png}
+    \caption{Distribución de tiempos de inferencia por modelo en conjunto de prueba. La línea roja indica la mediana y el rombo naranja la media.}
+    \label{fig:inference_times}
+\end{figure}
+
+RF-DETR small representa el modelo más eficiente, con una mediana de 171.49 ms y una media de 193.39 ms por imagen, superando incluso a RF-DETR nano (mediana: 186.16 ms, media: 208.53 ms).
+
+HerdNet y RF-DETR large presentan latencias comparables, con medianas de 441.27 ms y 417.88 ms respectivamente, siendo aproximadamente 2.4× más lentos que RF-DETR small. Sin embargo, ambos modelos exhiben mayor variabilidad temporal, como evidencian los outliers presentes en la figura, sugiriendo dependencia en la complejidad de las escenas procesadas.
+
+Para aplicaciones de monitoreo de fauna donde tanto la precisión como el throughput son críticos, RF-DETR small representa la opción óptima al combinar el mejor F1-Score con la menor latencia y mayor consistencia temporal.
+
+\subsection{Análisis de Matrices de Confusión sobre las detecciones}
+
+La Figura \ref{fig:confusion_matrix} presenta la matriz sobre las detecciones para RF-DETR small, el modelo de mejor desempeño.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\columnwidth]{static/img/confusion_matrix_rf-detr_small_stage2.png}
+    \caption{Matriz de confusión sobre las detecciones para RF-DETR small (Fase 2).}
+    \label{fig:confusion_matrix}
+\end{figure}
+
+El análisis de la diagonal principal revela una alta eficacia en la clasificación correcta para la mayoría de las especies: Topi (99\%), Búfalo (92\%), Kob (89\%) y Cobo de agua (88\%), destacando un desempeño perfecto (100\%) en las clases Facóquero y Elefante.
+
+Los patrones de confusión interespecífica más relevantes son:
+
+\begin{itemize}
+    \item \textbf{Kob $\rightarrow$ Topi (10\%):} Representa la confusión más significativa del modelo. Es un error unidireccional (la inversa es despreciable), atribuible a la similitud morfológica entre estos antílopes de tamaño medio y pelaje rojizo. El modelo parece identificar mejor los rasgos distintivos del Topi (cuernos curvados y manchas oscuras en las patas) que la morfología más genérica del Kob en ciertas posturas.
+
+    \item \textbf{Cobo de agua $\rightarrow$ Antílopes (12\%):} Esta especie presenta confusiones divididas: un 8\% es clasificado erróneamente como Topi y un 4\% como Kob. Estas confusiones ocurren típicamente cuando el animal está parcialmente ocluido o en ángulos cenitales estrictos donde sus cuernos característicos en forma de lira no son visibles, llevando al modelo a asignarlo a las clases de antílopes mayoritarias.
+
+    \item \textbf{Búfalo $\rightarrow$ Facóquero (6\%):} Se observa una confusión del 6\% de Búfalos clasificados como Facóqueros. Este error, aunque contraintuitivo por la diferencia de tamaño real, puede explicarse por la similitud en la coloración oscura y la textura de la piel en individuos juveniles o en tomas donde la escala relativa es ambigua debido a la altitud de vuelo.
+\end{itemize}
+
+\subsubsection{Interpretación de la Clasificación Perfecta}
+Es notable que especies como el \textbf{Facóquero} y el \textbf{Elefante} alcancen un 100\% en la diagonal de la matriz. Sin embargo, este resultado debe interpretarse con rigor técnico:
+
+\begin{itemize}
+    \item \textbf{Pureza vs. Exhaustividad:} El 100\% en la matriz indica una \textbf{precisión de clasificación condicional} perfecta: de todos los Facóqueros que el modelo logró detectar, ninguno fue confundido con otra especie.
+    \item \textbf{Discrepancia con el Recall:} Este valor no contradice el bajo \textit{Recall} de detección reportado anteriormente para el Facóquero (33.78\%). Significa que el modelo omite muchos individuos (falsos negativos de localización), pero cuando detecta uno, su clasificación semántica es impecable. Esto valida la efectividad del \textit{HNP} para limpiar la frontera de decisión entre la clase Facóquero y el fondo, aunque la arquitectura aún lucha por recuperar instancias difíciles.
+\end{itemize}
+
+En conclusión, las confusiones se concentran en el clúster de antílopes (Kob-Topi-Cobo), mientras que las especies con morfologías más distintivas (Elefante, Facóquero, Búfalo) presentan una separabilidad semántica robusta.
+
+\subsection{Evaluación Cualitativa en Especies Minoritarias}
+
+Se realizó una evaluación cualitativa enfocada en especies minoritarias bajo condiciones críticas de detección. Las Figuras \ref{fig:qualitative_elephant} y \ref{fig:qualitative_warthog} comparan las predicciones de los modelos contra Ground Truth en dos escenarios representativos.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{static/img/comparison_panel_elefante_crop3_stage2.png}
+    \caption{Comparación cualitativa de detecciones en escenario con oclusión severa - Elefantes. Se observan 4 elefantes parcialmente ocultos por vegetación densa.}
+    \label{fig:qualitative_elephant}
+\end{figure*}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{static/img/comparison_panel_facoquero_crop3_stage2.png}
+    \caption{Comparación cualitativa de detecciones en especies minoritarias - Facóquero. Se muestran 2 individuos aislados en terreno de vegetación dispersa.}
+    \label{fig:qualitative_warthog}
+\end{figure*}
+
+
+\subsubsection{Caso 1: Oclusión Severa en Elefantes}
+
+La Figura \ref{fig:qualitative_elephant} ilustra cuatro elefantes parcialmente ocultos por vegetación densa. Los resultados de detección son:
+
+\begin{itemize}
+    \item \textbf{HerdNet:} 2/4 detecciones (50\%). Falla en individuos con características distintivas ocultas (trompa, orejas), reflejando limitaciones del backbone ResNet-50 para capturar contexto global.
+    \item \textbf{RF-DETR small y large:} 3/4 detecciones (75\%). Mejora del +50\% sobre HerdNet, detectando exitosamente individuos con hasta 50\% de oclusión.
+\end{itemize}
+
+\textbf{Hallazgo clave:} La oclusión representa un límite fundamental para todos los modelos, incluyendo arquitecturas Transformer. Aunque RF-DETR mejora significativamente sobre HerdNet, existe un umbral de oclusión que ningún modelo supera, y \textbf{RF-DETR nano} carece de la capacidad mínima necesaria para escenarios complejos.
+
+\subsubsection{Caso 2: Detección y Clasificación de Facóquero}
+
+La Figura \ref{fig:qualitative_warthog} presenta dos facóqueros en terreno abierto , revelando un patrón diferente de error: confusión en clasificación pese a detección correcta.
+
+\begin{itemize}
+    \item \textbf{HerdNet:} 2/2 detecciones pero 1/2 clasificación correcta (50\%). Detecta ambos individuos en las ubicaciones correctas pero clasifica uno erróneamente como Topi, evidenciando las limitaciones del backbone ResNet-50 para discriminar especies morfológicamente similares de tamaño medio.
+    \item \textbf{RF-DETR  small:} 2/2 detecciones y clasificación correcta (100\%). Lo que demuestra capacidad superior para discriminar Facóquero bajo condiciones de buena visibilidad, validando la efectividad del refinamiento mediante HNM y los mecanismos de atención.
+\end{itemize}
+
+\textbf{Hallazgos clave:} Este caso revela dos patrones críticos: (1) Con buena visibilidad, la detección espacial es exitosa incluso para HerdNet, pero la clasificación correcta requiere capacidades discriminativas superiores que solo los Transformers proveen. (2) Para especies minoritarias morfológicamente similares a especies mayoritarias (Facóquero vs Kob), los modelos CNN tienden a clasificar hacia la clase más frecuente, mientras que RF-DETR mantiene discriminación robusta. Esto valida la clasificación perfecta (100\%) de Facóquero reportada en la matriz de confusión para RF-DETR small.

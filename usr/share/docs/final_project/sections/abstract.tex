@@ -1,0 +1,14 @@
+\begin{abstract}
+Este artículo aborda el desafío crítico del monitoreo automatizado de fauna silvestre en imágenes aéreas, específicamente en escenarios de alta densidad (manadas). El problema central radica en que los detectores tradicionales basados en CNN fallan ante la oclusión y superposición de animales; el algoritmo de Supresión de No Máximos (NMS) tiende a eliminar detecciones válidas, provocando un subconteo sistemático, mientras que modelos como HerdNet, aunque evitan el NMS, luchan con la clasificación de especies minoritarias.
+
+Como solución, se propone la implementación de RF-DETR. Esta arquitectura utiliza mecanismos de atención para modelar dependencias globales y realiza una predicción de conjuntos end-to-end, lo que permite eliminar por completo la necesidad de NMS y gestionar mejor las oclusiones severas.
+
+La metodología consistió en comparar tres variantes de RF-DETR (Nano, Small, Large) frente al modelo base HerdNet, utilizando un dataset de mamíferos africanos. Se aplicó una estrategia de entrenamiento en dos fases, donde la segunda etapa incorporó  Minería de Negativos Difíciles (HNM) para refinar la precisión y reducir falsos positivos en fondos complejos.
+
+Los principales resultados determinaron que RF-DETR Small es la variante óptima. Este modelo alcanzó un F1-Score del 90.24\%, superando significativamente al baseline (83.26\%) y reduciendo el error medio de conteo (MAE) en un 39.47\%. Además, demostró ser un 56\% más rápido en inferencia que HerdNet y mejoró sustancialmente la detección de especies minoritarias (como el cobo de agua), validando la superioridad de los Transformers para equilibrar precisión y eficiencia en tareas de conservación.\newline
+\end{abstract}
+
+\begin{IEEEkeywords}
+RF-DETR, HerdNet, DINOv2,HNM, detección de animales, imágenes aéreas, manadas densas
+
+\end{IEEEkeywords}

@@ -1,0 +1,66 @@
+\section{Estado del arte}
+
+La monitorización de la fauna silvestre mediante imágenes aéreas ha evolucionado significativamente, pasando de métodos de conteo manual propensos a sesgos humanos a sistemas automatizados basados en visión por computador. La revisión de la literatura revela una transición tecnológica desde las Redes Neuronales Convolucionales (CNN) tradicionales hacia arquitecturas especializadas en densidad y, más recientemente, hacia modelos basados en Transformers y mecanismos de atención. A continuación, se describen los enfoques más relevantes y la evolución técnica que fundamenta este proyecto.
+
+\subsection{Detección basada en CNNs y limitaciones en manadas densas}
+
+Históricamente, la detección de animales en imágenes aéreas se ha abordado mediante detectores de objetos de propósito general basados en anclas (\textit{anchor-based}), como Faster R-CNN, Libra R-CNN y RetinaNet. Estudios previos sobre el mismo conjunto de datos utilizado en esta investigación demostraron que modelos como Libra R-CNN podían alcanzar una precisión media (mAP) del 80\% en condiciones ideales \cite{delplanque-data}.
+
+Sin embargo, como sintetizan diversas revisiones del campo \cite{xu-review}, estas arquitecturas presentan dos limitaciones fundamentales en el contexto de manadas densas:
+
+1. Dependencia del NMS: el algoritmo de Supresión de No Máximos tiende a eliminar detecciones válidas cuando varios animales aparecen muy próximos, lo que provoca subconteo sistemático.
+
+2. Objetos pequeños y ocluidos: en imágenes aéreas, los animales suelen ocupar pocos píxeles, y las CNN tradicionales tienen dificultades para distinguir individuos contiguos en fondos heterogéneos.
+
+En estudios aplicados a fauna africana, Delplanque et al. observaron caídas críticas de precisión en grupos densos debido exactamente a estos factores \cite{delplanque-data}. Estas limitaciones motivaron el desarrollo de modelos específicamente diseñados para entornos con oclusión extrema.
+
+\subsection{HerdNet y el enfoque basado en puntos}
+
+Para resolver el dilema entre la localización precisa y el conteo en masas, Delplanque et al. propusieron \textbf{HerdNet}, el cual se establece como el modelo de referencia (\textit{baseline}) para este proyecto \cite{herdnet}. HerdNet abandona el enfoque de cajas delimitadoras en favor de una estimación basada en puntos, inspirada en técnicas de conteo de multitudes (\textit{crowd counting}).
+
+Esta arquitectura utiliza un mapa de Transformada de Distancia Inversa Focal (FIDT).Este mapa genera picos localizados en el centro de cada animal, permitiendo detectar individuos incluso cuando no hay contornos claros, evitar por completo el uso de NMS, y mantener robustez en presencia de oclusiones y variaciones de escala.
+
+Aunque HerdNet superó a las arquitecturas basadas en anclas (como Faster R-CNN) y basadas en densidad pura (como DLA-34) con un F1-Score del 73.6\% y un RMSE de 9.8, sobre el conjunto de datos de múltiples especies utilizado en este proyecto, presenta desafíos en la clasificación de especies minoritarias y una dependencia de arquitecturas de CNN convencionales que pueden no capturar eficazmente el contexto global de la imagen.
+
+\subsection{La revolución de los Transformers: WildlifeMapper, OpenWildlife y RF-DETR}
+
+La incorporación de arquitecturas tipo \textit{Transformer} ha marcado un punto de inflexión en la detección de objetos en imágenes aéreas. A diferencia de las CNN convencionales, estos modelos introducen mecanismos de atención capaces de capturar relaciones espaciales de largo alcance, lo que resulta crítico para manejar variaciones extremas de escala y fondos heterogéneos.
+
+\subsubsection*{WildlifeMapper y OpenWildlife}
+Kumar et al. presentaron \textbf{WildlifeMapper} \cite{wildlife-mapper}, una arquitectura que integra módulos de refinamiento local para capturar estructuras de alta frecuencia. Este enfoque ha demostrado ser superior en el manejo de imágenes aéreas de muy alta resolución (hasta $8400 \times 5500$ px), permitiendo una localización precisa en paisajes vastos.
+
+Por otro lado, Patel et al. propusieron \textbf{OpenWildlife} \cite{open-wildlife}, un detector de vocabulario abierto basado en la arquitectura \textit{Grounding-DINO}. Este modelo combina un \textit{backbone} visual (Swin Transformer) con un codificador de lenguaje (BERT), permitiendo la detección de fauna guiada por descripciones textuales naturales. Si bien ofrece una gran capacidad de generalización hacia especies no vistas durante el entrenamiento, su arquitectura pesada conlleva un costo computacional que limita su escalabilidad en análisis masivos.
+
+\subsubsection*{RF-DETR: Eficiencia en Tiempo Real}
+Más recientemente, Robinson et al. introdujeron \textbf{RF-DETR} \cite{rf-detr}, un \textit{Detection Transformer} diseñado específicamente para optimizar el equilibrio entre precisión y latencia. Esta arquitectura se distingue por dos innovaciones clave:
+
+\begin{itemize}
+    \item \textbf{Búsqueda de Arquitectura Neuronal (NAS) de peso compartido:} Permite ajustar dinámicamente la profundidad del decodificador, el número de \textit{queries} y las ventanas de atención sin necesidad de reentrenar el modelo desde cero.
+    \item \textbf{Backbone DINOv2 \cite{dinov2}:} Incorpora representaciones visuales robustas obtenidas mediante un preentrenamiento autosupervisado a escala de internet.
+\end{itemize}
+
+En benchmarks estándar como COCO y el complejo RF100-VL, RF-DETR ha superado a detectores modernos como YOLOv8 y D-FINE, logrando métricas superiores a 60 AP con latencias por debajo de los 40 ms \cite{rf-detr}. Crucialmente para este proyecto, RF-DETR opera como un detector \textit{end-to-end}, eliminando la necesidad de algoritmos de post-procesamiento manuales como la Supresión de No Máximos (NMS). Esta característica lo hace teóricamente superior en escenarios de alta densidad, donde el NMS tradicional tiende a suprimir individuos contiguos.
+
+\subsection{Análisis, brechas identificadas y propuesta}
+
+La revisión exhaustiva de la literatura permite identificar tres brechas tecnológicas principales que limitan el monitoreo automatizado de fauna en la actualidad:
+
+\begin{enumerate}
+    \item \textbf{Precisión limitada en densidad extrema:} Los modelos tradicionales basados en anclas (como la familia YOLO o Faster R-CNN) fallan sistemáticamente en la detección de manadas densas. Esto se debe intrínsecamente al uso de NMS, que al intentar eliminar duplicados, elimina erróneamente detecciones válidas de animales que se superponen o están muy próximos entre sí \cite{xu-review}.
+
+    \item \textbf{Dilema entre localización y contexto semántico:} Enfoques como HerdNet \cite{herdnet} resolvieron eficazmente el problema de la oclusión mediante la estimación de densidad basada en puntos. Sin embargo, al depender de CNNs tradicionales, su capacidad para capturar el contexto global de la imagen es limitada, lo que afecta su capacidad de generalización y clasificación fina en entornos complejos.
+
+    \item \textbf{Costo computacional de los modelos fundacionales:} Aunque métodos recientes como WildlifeMapper y OpenWildlife ofrecen un desempeño excelente y capacidades de vocabulario abierto, sus requerimientos computacionales son prohibitivos para el despliegue en escenarios de conservación con recursos limitados o para el procesamiento de grandes volúmenes de datos de drones \cite{open-wildlife}.
+\end{enumerate}
+
+\textbf{Síntesis y propuesta de valor:}
+El análisis de estas limitaciones sugiere que existe una oportunidad no explorada en la intersección de estas tecnologías. Se plantea que la implementación de \textbf{RF-DETR} en el contexto de manadas densas podría cerrar estas brechas simultáneamente.
+
+La hipótesis central es que la capacidad de los Transformers para modelar relaciones globales y prescindir del NMS permitirá mejorar la recuperación (\textit{recall}) de individuos en manadas densas, superando el conteo de HerdNet. Simultáneamente, se espera que el uso de un \textit{backbone} robusto como DINOv2 mejore la discriminación entre especies (reduciendo la confusión reportada en HerdNet), todo ello manteniendo una eficiencia computacional viable para su aplicación práctica.
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{static/img/aumento.png}
+    \caption{Visualización del preprocesamiento: extracción de recortes (tiling) y ejemplos de aumentación de datos aplicados para el entrenamiento de HerdNet y RF-DETR.}
+    \label{fig:preprocessing}
+\end{figure*}
