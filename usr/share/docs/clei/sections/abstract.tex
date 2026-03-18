@@ -1,0 +1,38 @@
+\begin{abstract}
+
+%% This article addresses the challenge of automatic monitoring of wildlife in aerial imagery, specially on high density scenarios.
+%% Este artículo aborda el desafío crítico del monitoreo automatizado de fauna silvestre en imágenes aéreas, específicamente en escenarios de alta densidad (manadas).
+This article addresses the challenge of automated wildlife monitoring in aerial imagery, particularly in on high-density scenarios (herds).
+
+% El problema central radica en que los detectores tradicionales basados en CNN fallan ante la oclusión y superposición de animales; el algoritmo de Supresión de No Máximos (NMS) tiende a eliminar detecciones válidas, provocando un subconteo sistemático, mientras que modelos como HerdNet, aunque evitan el NMS, luchan con la clasificación de especies minoritarias.
+% The main challenge is because traditional detectors based on CNN architectures fails where animals are occluded or overwrite; the Non Maximal Suppression (NMS) tends to omit valid detections, causing a systematic sub-counting, while models like HerdNet which prevents the usage of NMS, face a challenge with under-represented species.  
+
+The core problem relies on the fact that traditional CNN-based detectors fail in the presence of animal occlusion and overlap; specifically, Non-Maximum Suppression (NMS) tends to discard valid detections, resulting in systematic undercounting. Meanwhile, models such as HerdNet which bypass NMS, struggle with underrepresented species.
+
+% Como solución, se propone la implementación de RF-DETR. Esta arquitectura utiliza mecanismos de atención para modelar dependencias globales y realiza una predicción de conjuntos end-to-end, lo que permite eliminar por completo la necesidad de NMS y gestionar mejor las oclusiones severas.
+% As a solution, we propose a solution based on the RF-DETR architecture, which uses attention mechanisms to model global dependencies and predicts the object detections and classification end-to-end, removing hand crafted intermediate methods like NMS. Our bet is that it improves the scenes where severe occlusions are present.
+
+To address this issue, this paper proposes a solution leveraging the RF-DETR architecture. By utilizing its attention mechanisms to model global dependencies and its end-to-end set prediction, our approach eliminates the need for NMS and provides more robust spatial data in severe occlusion scenarios.
+
+% La metodología consistió en comparar tres variantes de RF-DETR (Nano, Small, Large) frente al modelo base HerdNet, utilizando un dataset de mamíferos africanos.
+% The methodology consists in to compare three variants of RF-DETR based on the model size (Nano, Small, Large), over the last state of the art model HerdNet, which was built using an African mammal dataset. 
+The methodology involved evaluating three RF-DETR variants -- Nano, Small and Large -- against the state of the art HerdNet baseline, utilizing a dataset of African mammals.
+
+% Se aplicó una estrategia de entrenamiento en dos fases, donde la segunda etapa incorporó  Minería de Negativos Difíciles (HNM) para refinar la precisión y reducir falsos positivos en fondos complejos
+% A two phases strategy were applied, on the first one we have trained with patches where strictly an animal is contained. The second phase incorporates Hard Negative Mining (HNM) to reduce false positives in complex backgrounds.   
+A two-phase training strategy was implemented. The first phase utilized image patches containing only positive samples (animals). The second stage incorporated Hard Negative Mining (HNM) to refine precision and mitigate false positives in complex background.
+
+%Los principales resultados determinaron que RF-DETR Small es la variante óptima.
+% Results has shown that RF-DETR Small is the optimal variant.
+% Este modelo alcanzó un F1-Score del 90.24\%, superando significativamente al baseline (83.26\%) y reduciendo el error medio de conteo (MAE) en un 39.47\%. Además, demostró ser un 56\% más rápido en inferencia que HerdNet y mejoró sustancialmente la detección de especies minoritarias (como el cobo de agua), validando la superioridad de los Transformers para equilibrar precisión y eficiencia en tareas de conservación.
+The main results indicate that RF-DETR Small is the optimal variant. This model achieved an F1-Score of 90.24\%, significantly outperforming the baseline (83.26\%) and reducing the Mean Absolute Error (MAE) for counting by 39.47\%. Additionally, it demonstrated 56\% faster inference compared to HerdNet and substantially improved detection of minority species (such as waterbuck), validating the superiority of Transformers in balancing precision and efficiency for conservation tasks.\newline
+\end{abstract}
+
+\begin{IEEEkeywords}
+%RF-DETR, HerdNet, DINOv2,HNM, detección de animales, imágenes aéreas, manadas densas
+RF-DETR, HerdNet, DINOv2, HNM, animal detection, aerial imagery, dense herds
+
+\end{IEEEkeywords}
+
+
+
