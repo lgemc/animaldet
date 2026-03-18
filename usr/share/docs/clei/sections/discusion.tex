@@ -1,0 +1,116 @@
+%\section{Discusión}
+\section{Discussion}
+
+%Los resultados validan la hipótesis de que la arquitectura RF-DETR supera al baseline HerdNet gracias a su diseño libre de NMS y al uso de representaciones visuales robustas. Sin embargo, el hallazgo más relevante de este estudio no es solo la mejora en precisión, sino la identificación de la arquitectura óptima en términos de costo-beneficio.
+The results validate the hypothesis that the RF-DETR architecture outperforms the HerdNet baseline thanks to its NMS-free design and the use of robust visual representations. However, the most relevant finding of this study is not only the improvement in accuracy, but the identification of the optimal architecture in terms of cost-benefit.
+
+%\subsection{Small vs. Large: Eficiencia sobre Fuerza Bruta}
+\subsection{Small vs. Large: Efficiency over Brute Force}
+
+%Si bien se esperaba que la variante \textbf{Large} (aprox. 128M de parámetros ) dominara las métricas debido a su mayor capacidad, los resultados muestran que la variante \textbf{Small} (aprox. 32M de parámetros ) logró un rendimiento ligeramente superior en el F1-Score global (90.24\% vs 88.66\%).
+While the \textbf{Large} variant (approx. 128M parameters) was expected to dominate the metrics due to its greater capacity, the results show that the \textbf{Small} variant (approx. 32M parameters) achieved slightly superior performance in the global F1-Score (90.24\% vs 88.66\%).
+
+%Este fenómeno sugiere que el rendimiento del modelo ha alcanzado un punto de saturación respecto a la complejidad de la arquitectura para este dataset específico. Es probable que el modelo Large haya incurrido en un leve sobreajuste (\textit{overfitting}), aprendiendo detalles irrelevantes del fondo en el conjunto de entrenamiento que penalizaron su generalización en la prueba.
+This phenomenon suggests that the model's performance has reached a saturation point with respect to the architecture's complexity for this specific dataset. It is likely that the Large model incurred slight overfitting (\textit{overfitting}), learning irrelevant background details in the training set that penalized its generalization on the test set.
+
+%Por lo tanto, la principal ventaja que ofrece el modelo small radica en que logró superar al modelo más potente utilizando una fracción de los parámetros y con un tiempo de inferencia un \textbf{56\% menor} (193 ms vs 442 ms). Esto lo convierte indiscutiblemente en la mejor opción para despliegue.
+Therefore, the main advantage offered by the small model lies in the fact that it managed to outperform the more powerful model using a fraction of the parameters and with an inference time \textbf{56\% lower} (193 ms vs 442 ms). This makes it indisputably the best option for deployment.
+
+%\subsection{Análisis de Latencia: Eficiencia Estructural vs. Costo Computacional}
+\subsection{Latency Analysis: Structural Efficiency vs. Computational Cost}
+
+%El análisis de los tiempos de inferencia revela un comportamiento no lineal interesante entre las variantes \textbf{Nano} y \textbf{Small}, evidenciando un compromiso (\textit{trade-off}) entre la eficiencia del preprocesamiento y el costo computacional bruto.
+The analysis of inference times reveals an interesting non-linear behavior between the \textbf{Nano} and \textbf{Small} variants, evidencing a trade-off (\textit{trade-off}) between preprocessing efficiency and raw computational cost.
+
+%\subsubsection{Velocidad Promedio: La ventaja del modelo Small}
+\subsubsection{Average Speed: The Small Model Advantage}
+
+%En términos de latencia media, \textbf{RF-DETR Small} (193.39 ms) supera a la variante \textbf{Nano} (208.53 ms). Esto confirma la hipótesis de la \textit{Ineficiencia del Teselado}: al utilizar una resolución de entrada mayor ($512 \times 512$), el modelo Small requiere generar y ensamblar un número significativamente menor de parches para cubrir la misma área geográfica. La reducción en la sobrecarga administrativa (I/O, pre-procesamiento y fusión de resultados) compensa con creces el costo extra de inferencia por parche.
+In terms of average latency, \textbf{RF-DETR Small} (193.39 ms) outperforms the \textbf{Nano} variant (208.53 ms). This confirms the hypothesis of \textit{Tiling Inefficiency}: by using a higher input resolution ($512 \times 512$), the Small model requires generating and assembling a significantly smaller number of patches to cover the same geographic area. The reduction in administrative overhead (I/O, preprocessing and result fusion) more than compensates for the extra inference cost per patch.
+
+%\subsubsection{Latencia de Cola (P95): La estabilidad del modelo Nano}
+\subsubsection{Tail Latency (P95): The Stability of the Nano Model}
+
+%Sin embargo, en el percentil 95 (P95), la tendencia se invierte: el modelo \textbf{Nano} muestra una latencia máxima menor (317.55 ms) comparada con el \textbf{Small} (352.77 ms). Esto se debe a la física fundamental del cálculo de tensores:
+However, at the 95th percentile (P95), the trend is reversed: the \textbf{Nano} model shows a lower maximum latency (317.55 ms) compared to the \textbf{Small} (352.77 ms). This is due to the fundamental physics of tensor computation:
+
+\begin{itemize}
+%    \item Un parche del modelo Small ($512^2$ px) contiene un \textbf{77\% más de píxeles} que uno del modelo Nano ($384^2$ px).
+    \item A Small model patch ($512^2$ px) contains \textbf{77\% more pixels} than a Nano model patch ($384^2$ px).
+%    \item En escenarios de alta carga o complejidad visual extrema, el costo cuadrático de los mecanismos de atención del Transformer sobre mapas de características más grandes penaliza al modelo Small.
+    \item In high-load scenarios or extreme visual complexity, the quadratic cost of Transformer attention mechanisms over larger feature maps penalizes the Small model.
+\end{itemize}
+
+%\subsection{Small vs. Large: Eficiencia sobre Fuerza Bruta}
+\subsection{Small vs. Large: Efficiency over Brute Force}
+
+%Si bien se esperaba que la variante \textbf{Large} (aprox. 128M de parámetros ) dominara las métricas debido a su mayor capacidad, los resultados muestran que la variante \textbf{Small} (aprox. 32M de parámetros ) logró un rendimiento ligeramente superior en el F1-Score global (90.24\% vs 88.66\%).
+While the \textbf{Large} variant (approx. 128M parameters) was expected to dominate the metrics due to its greater capacity, the results show that the \textbf{Small} variant (approx. 32M parameters) achieved slightly superior performance in the global F1-Score (90.24\% vs 88.66\%).
+
+%Este fenómeno sugiere que el rendimiento del modelo ha alcanzado un punto de saturación respecto a la complejidad de la arquitectura para este dataset específico. Es probable que el modelo Large haya incurrido en un leve sobreajuste (\textit{overfitting}), aprendiendo detalles irrelevantes del fondo en el conjunto de entrenamiento que penalizaron su generalización en la prueba.
+This phenomenon suggests that the model's performance has reached a saturation point with respect to the architecture's complexity for this specific dataset. It is likely that the Large model incurred slight overfitting (\textit{overfitting}), learning irrelevant background details in the training set that penalized its generalization on the test set.
+
+%Por lo tanto, la principal ventaja que ofrece el modelo small radica en que logró superar al modelo más potente utilizando una fracción de los parámetros y con un tiempo de inferencia un \textbf{56\% menor} (193 ms vs 442 ms). Esto lo convierte indiscutiblemente en la mejor opción para despliegue.
+Therefore, the main advantage offered by the small model lies in the fact that it managed to outperform the more powerful model using a fraction of the parameters and with an inference time \textbf{56\% lower} (193 ms vs 442 ms). This makes it indisputably the best option for deployment.
+
+%\subsection{Análisis de Latencia: Eficiencia Estructural vs. Costo Computacional}
+\subsection{Latency Analysis: Structural Efficiency vs. Computational Cost}
+
+%El análisis de los tiempos de inferencia revela un comportamiento no lineal interesante entre las variantes \textbf{Nano} y \textbf{Small}, evidenciando un compromiso (\textit{trade-off}) entre la eficiencia del preprocesamiento y el costo computacional bruto.
+The analysis of inference times reveals an interesting non-linear behavior between the \textbf{Nano} and \textbf{Small} variants, evidencing a trade-off (\textit{trade-off}) between preprocessing efficiency and raw computational cost.
+
+%\subsubsection{Velocidad Promedio: La ventaja del modelo Small}
+\subsubsection{Average Speed: The Small Model Advantage}
+
+%En términos de latencia media, \textbf{RF-DETR Small} (193.39 ms) supera a la variante \textbf{Nano} (208.53 ms). Esto confirma la hipótesis de la \textit{Ineficiencia del Teselado}: al utilizar una resolución de entrada mayor ($512 \times 512$), el modelo Small requiere generar y ensamblar un número significativamente menor de parches para cubrir la misma área geográfica. La reducción en la sobrecarga administrativa (I/O, pre-procesamiento y fusión de resultados) compensa con creces el costo extra de inferencia por parche.
+In terms of average latency, \textbf{RF-DETR Small} (193.39 ms) outperforms the \textbf{Nano} variant (208.53 ms). This confirms the hypothesis of \textit{Tiling Inefficiency}: by using a higher input resolution ($512 \times 512$), the Small model requires generating and assembling a significantly smaller number of patches to cover the same geographic area. The reduction in administrative overhead (I/O, preprocessing and result fusion) more than compensates for the extra inference cost per patch.
+
+%\subsubsection{Latencia de Cola (P95): La estabilidad del modelo Nano}
+\subsubsection{Tail Latency (P95): The Stability of the Nano Model}
+
+%Sin embargo, en el percentil 95 (P95), la tendencia se invierte: el modelo \textbf{Nano} muestra una latencia máxima menor (317.55 ms) comparada con el \textbf{Small} (352.77 ms). Esto se debe a la física fundamental del cálculo de tensores:
+However, at the 95th percentile (P95), the trend is reversed: the \textbf{Nano} model shows a lower maximum latency (317.55 ms) compared to the \textbf{Small} (352.77 ms). This is due to the fundamental physics of tensor computation:
+
+\begin{itemize}
+%    \item Un parche del modelo Small ($512^2$ px) contiene un \textbf{77\% más de píxeles} que uno del modelo Nano ($384^2$ px).
+    \item A Small model patch ($512^2$ px) contains \textbf{77\% more pixels} than a Nano model patch ($384^2$ px).
+%    \item En escenarios de alta carga o complejidad visual extrema, el costo cuadrático de los mecanismos de atención del Transformer sobre mapas de características más grandes penaliza al modelo Small.
+    \item In high-load scenarios or extreme visual complexity, the quadratic cost of Transformer attention mechanisms over larger feature maps penalizes the Small model.
+\end{itemize}
+
+%Aunque las variantes \textbf{Nano} y \textbf{Small} presentan perfiles de latencia y tamaño comparables, la variante \textbf{Small} se consolida como la elección definitiva por su superioridad cualitativa. El incremento marginal en la resolución de entrada ($512 \times 512$) permite superar el umbral mínimo de representación necesario para distinguir especies críticas (como el Elefante), logrando un salto en F1-Score del 71.78\% al 90.24\% sin incurrir en los costos de la variante Large.
+Although the \textbf{Nano} and \textbf{Small} variants present comparable latency and size profiles, the \textbf{Small} variant consolidates as the definitive choice due to its qualitative superiority. The marginal increase in input resolution ($512 \times 512$) allows surpassing the minimum representation threshold necessary to distinguish critical species (such as the Elephant), achieving a jump in F1-Score from 71.78\% to 90.24\% without incurring the costs of the Large variant.
+
+
+%\subsection{Impacto del Hard Negative Mining (HNM)}
+\subsection{Impact of Hard Negative Mining (HNM)}
+
+%El refinamiento con HNM fue el factor determinante para la viabilidad del modelo Small. Inicialmente, este modelo presentaba una precisión baja (0.26), indicando una tendencia a alucinar animales en texturas complejas. La fase 2 corrigió drásticamente este comportamiento (precisión 0.94), demostrando que los Transformers de tamaño medio tienen la plasticidad necesaria para aprender a discriminar fondos difíciles sin necesitar la capacidad masiva (y el costo) de los modelos Large.
+Refinement with HNM was the determining factor for the viability of the Small model. Initially, this model presented low precision (0.26), indicating a tendency to hallucinate animals in complex textures. Phase 2 drastically corrected this behavior (precision 0.94), demonstrating that medium-sized Transformers have the necessary plasticity to learn to discriminate difficult backgrounds without needing the massive capacity (and cost) of Large models.
+
+%\subsection{Análisis por Especie}
+\subsection{Species-Level Analysis}
+
+%La mejora en la detección de especies minoritarias valida el uso de \textit{backbones} pre-entrenados como DINOv2. En el caso del \textit{Cobo de agua} (2.4\% del dataset), las variantes de RF-DETR mantuvieron un F1-Score robusto (mayor a 0.70), superando al baseline HerdNet. Esto indica que el modelo no requiere miles de ejemplos para aprender una representación discriminativa de una especie, un rasgo crucial para la conservación de fauna amenazada donde los datos son escasos por naturaleza.
+The improvement in minority species detection validates the use of pre-trained \textit{backbones} such as DINOv2. In the case of the \textit{Waterbuck} (2.4\% of the dataset), RF-DETR variants maintained a robust F1-Score (greater than 0.70), surpassing the HerdNet baseline. This indicates that the model does not require thousands of examples to learn a discriminative representation of a species, a crucial trait for endangered wildlife conservation where data is naturally scarce.
+
+%\subsection{Limitaciones y Oportunidades de Mejora}
+\subsection{Limitations and Opportunities for Improvement}
+
+%A pesar del éxito general del modelo \textbf{RF-DETR Small}, el análisis detallado de los resultados revela dos limitaciones técnicas importantes que definen el alcance actual de la solución y las direcciones futuras.
+Despite the overall success of the \textbf{RF-DETR Small} model, detailed analysis of the results reveals two important technical limitations that define the current scope of the solution and future directions.
+
+%\subsubsection{El Límite Inferior de la Arquitectura Nano}
+\subsubsection{The Lower Bound of the Nano Architecture}
+
+%La variante \textbf{Nano} mostró un rendimiento insuficiente (F1 global 71.78\%), colapsando dramáticamente en la clase \textit{Elefante} con un F1-Score de apenas 0.0363, en marcado contraste con el $>0.86$ logrado por las variantes Small y Large. Este fallo catastrófico establece un límite inferior claro: para distinguir patrones complejos en imágenes aéreas de alta altitud, se requiere una resolución de entrada mínima (al menos $512 \times 512$) y una profundidad de red que la versión Nano no ofrece.
+The \textbf{Nano} variant showed insufficient performance (global F1 71.78\%), collapsing dramatically in the \textit{Elephant} class with an F1-Score of barely 0.0363, in stark contrast to the $>0.86$ achieved by the Small and Large variants. This catastrophic failure establishes a clear lower bound: to distinguish complex patterns in high-altitude aerial images, a minimum input resolution (at least $512 \times 512$) and network depth are required that the Nano version does not offer.
+
+%\subsubsection{Margen de Mejora en Clases Minoritarias}
+\subsubsection{Room for Improvement in Minority Classes}
+
+%Aunque RF-DETR mejoró la detección de especies subrepresentadas respecto a HerdNet, el desempeño en clases como el \textit{Facóquero} (F1 0.4065 en Small) y el \textit{Cobo de agua} (F1 0.7097 en Small) sigue siendo inferior al de las clases mayoritarias ($>0.84$).
+Although RF-DETR improved the detection of underrepresented species compared to HerdNet, performance in classes such as \textit{Warthog} (F1 0.4065 in Small) and \textit{Waterbuck} (F1 0.7097 in Small) remains lower than that of majority classes ($>0.84$).
+
+%Es crucial notar que, a diferencia de HerdNet, el entrenamiento de RF-DETR \textbf{no implementó una ponderación agresiva de la función de pérdida} (HerdNet utilizó pesos de hasta $12$ para clases minoritarias). Esto sugiere que el rendimiento actual de RF-DETR tiene un potencial significativo para aumentar aún más la precisión en estas clases críticas mediante la incorporación de estrategias de \textit{Weighted Loss} o técnicas de sobre-muestreo (\textit{Oversampling}) específicas para las especies menos representadas.
+It is crucial to note that, unlike HerdNet, RF-DETR training \textbf{did not implement aggressive loss function weighting} (HerdNet used weights of up to $12$ for minority classes). This suggests that RF-DETR's current performance has significant potential to further increase accuracy in these critical classes through the incorporation of \textit{Weighted Loss} strategies or oversampling (\textit{Oversampling}) techniques specific to less represented species.

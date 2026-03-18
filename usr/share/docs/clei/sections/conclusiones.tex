@@ -1,0 +1,43 @@
+% \section{Conclusiones y trabajo futuro}
+\section{Conclusions and Future Work}
+
+% Esta investigación ha demostrado que las arquitecturas de detección de objetos basadas en Transformers, específicamente RF-DETR, representan una solución superior para la monitorización automatizada de fauna en manadas densas, superando las limitaciones inherentes a los métodos tradicionales basados en CNN y NMS. Los hallazgos clave se resumen a continuación:
+This research has demonstrated that Transformer-based object detection architectures, specifically RF-DETR, represent a superior solution for automated wildlife monitoring in dense herds, overcoming the inherent limitations of traditional CNN and NMS-based methods. The key findings are summarized below:
+
+\begin{itemize}
+    % \item \textbf{Superioridad de la Arquitectura sin NMS:} La predicción directa de conjuntos (\textit{end-to-end}) de RF-DETR resolvió eficazmente el problema de subconteo por oclusión. El modelo óptimo, \textbf{RF-DETR Small}, alcanzó un \textbf{F1-Score global de 90.24\%}, superando al baseline HerdNet (83.26\%) y reduciendo el Error Medio Absoluto (MAE) de conteo en un \textbf{39.47\%}.
+    \item \textbf{Superiority of the NMS-free Architecture:} RF-DETR's direct set prediction (\textit{end-to-end}) effectively solved the occlusion-based undercounting problem. The optimal model, \textbf{RF-DETR Small}, achieved a \textbf{global F1-Score of 90.24\%}, surpassing the HerdNet baseline (83.26\%) and reducing the Mean Absolute Error (MAE) in counting by \textbf{39.47\%}.
+
+    % \item \textbf{Eficiencia Óptima del Modelo Small:} Se identificó un punto de saturación en el rendimiento donde aumentar la complejidad del modelo no se traduce en ganancias significativas. La variante \textbf{Small} (32M parámetros) superó ligeramente a la variante \textbf{Large} (128M parámetros) en precisión global, siendo \textbf{56\% más rápida} en inferencia media (193 ms vs 442 ms), consolidándose como la opción ideal para el despliegue.
+    \item \textbf{Optimal Efficiency of the Small Model:} A performance saturation point was identified where increasing model complexity does not translate into significant gains. The \textbf{Small} variant (32M parameters) slightly outperformed the \textbf{Large} variant (128M parameters) in overall precision, while being \textbf{56\% faster} in average inference (193 ms vs 442 ms), establishing itself as the ideal option for deployment.
+
+    % \item \textbf{Validación del Hard Negative Mining:} El entrenamiento en dos fases fue crítico. La minería de negativos difíciles (HNM) transformó a RF-DETR Small de un modelo con precisión inaceptable (26.15\%) a la solución más precisa (93.85\%), demostrando la plasticidad del modelo para discriminar fondos complejos sin aumentar su tamaño.
+    \item \textbf{Validation of Hard Negative Mining:} The two-phase training was critical. Hard negative mining (HNM) transformed RF-DETR Small from a model with unacceptable precision (26.15\%) to the most accurate solution (93.85\%), demonstrating the model's plasticity to discriminate complex backgrounds without increasing its size.
+
+    % \item \textbf{Mejora en Especies Minoritarias:} El uso de \textit{backbones} visuales robustos (DINOv2) mejoró significativamente la detección de clases subrepresentadas. En el caso crítico del Cobo de agua (2.4\% del dataset), RF-DETR Small mantuvo un F1-Score robusto superior al 70\%, validando su capacidad de generalización con pocos datos.
+    \item \textbf{Improvement in Minority Species:} The use of robust visual \textit{backbones} (DINOv2) significantly improved the detection of underrepresented classes. In the critical case of the Waterbuck (2.4\% of the dataset), RF-DETR Small maintained a robust F1-Score above 70\%, validating its generalization capability with limited data.
+
+    % \item \textbf{Limitación de la Resolución Mínima:} La variante Nano demostró ser insuficiente para esta tarea, colapsando en la detección de especies clave como el Elefante, lo que establece una resolución de entrada mínima de $512 \times 512$ como requisito para capturar patrones complejos en imágenes aéreas.\newline
+    \item \textbf{Minimum Resolution Limitation:} The Nano variant proved insufficient for this task, collapsing in the detection of key species such as Elephant, which establishes a minimum input resolution of $512 \times 512$ as a requirement to capture complex patterns in aerial images.\newline
+\end{itemize}
+
+% \subsubsection*{Para el trabajo futuro, se proponen dos direcciones principales}
+\subsubsection*{For future work, two main directions are proposed}
+
+\begin{enumerate}
+    % \item \textbf{Mitigación Avanzada del Desbalance de Clases:}
+    % Aunque RF-DETR mejoró la detección base, persiste un margen de mejora en las clases minoritarias. Se propone incorporar estrategias de ponderación de pérdida (\textit{Weighted Loss}) en la función de costo, replicando la estrategia de asignación agresiva de pesos que demostró ser efectiva en el entrenamiento de HerdNet. Alternativamente, se sugiere explorar técnicas de sobre-muestreo (\textit{Oversampling}) para equilibrar la exposición del modelo a estas especies durante el entrenamiento.
+    \item \textbf{Advanced Class Imbalance Mitigation:}
+    Although RF-DETR improved baseline detection, there remains room for improvement in minority classes. It is proposed to incorporate loss weighting strategies (\textit{Weighted Loss}) in the cost function, replicating the aggressive weight assignment strategy that proved effective in HerdNet training. Alternatively, it is suggested to explore oversampling techniques (\textit{Oversampling}) to balance the model's exposure to these species during training.
+
+    % \item \textbf{Optimización de Inferencia mediante cuantización:}
+    % Para facilitar el despliegue en dispositivos de borde, es necesario explorar la cuantización del modelo a INT8. Dado que las arquitecturas basadas en Transformers pueden sufrir degradación de rendimiento con una cuantización ingenua \cite{rf-detr}, se recomienda implementar esquemas de \textit{Post-Training Quantization} (PTQ) calibrados \cite{fima-q} o \textit{Quantization-Aware Training} (QAT). El objetivo es reducir la huella de memoria sin que la pérdida de precisión numérica afecte desproporcionadamente la localización en manadas densas \cite{hqod}.
+    \item \textbf{Inference Optimization through Quantization:}
+    To facilitate deployment on edge devices, it is necessary to explore model quantization to INT8. Given that Transformer-based architectures can suffer performance degradation with naive quantization \cite{rf-detr}, it is recommended to implement calibrated \textit{Post-Training Quantization} (PTQ) schemes \cite{fima-q} or \textit{Quantization-Aware Training} (QAT). The objective is to reduce the memory footprint without having numerical precision loss disproportionately affect localization in dense herds \cite{hqod}.
+
+    % \item \textbf{Entrenamiento con DINOV3 como extractor de características:}
+    \item \textbf{Training with DINOv3 as Feature Extractor:}
+
+    % Si bien la implementación actual de RF-DETR utiliza DINOv2 \cite{dinov2}, la evolución reciente de la arquitectura sugiere la adopción de DINOv3 \cite{dinov3}. Se recomienda evaluar la migración hacia este nuevo backbone, dado que ha demostrado superar a su predecesor en tareas de detección, logrando un rendimiento superior con una menor cantidad de parámetros y mayor eficiencia computacional \cite{deimv2}
+    While the current RF-DETR implementation uses DINOv2 \cite{dinov2}, the recent evolution of the architecture suggests the adoption of DINOv3 \cite{dinov3}. It is recommended to evaluate the migration to this new backbone, given that it has demonstrated superiority over its predecessor in detection tasks, achieving superior performance with fewer parameters and greater computational efficiency \cite{deimv2}
+\end{enumerate}
